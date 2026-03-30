@@ -2,12 +2,12 @@
 
 A sleek, professional, and minimalist **Black & White** authentication system. Built with **Bootstrap 5** and powered by **Supabase** for secure user management and profile data storage.
 
-## 🏛️ Project Architecture
+## Project Architecture
 - **Frontend**: HTML5, CSS3 (Vanilla), JavaScript (ES6+).
 - **Styling**: Bootstrap 5 + custom minimalist theme.
 - **Backend-as-a-Service**: [Supabase](https://supabase.com/) (Auth & Postgres).
 
-## ✨ Key Features
+## Key Features
 - **Minimalist Aesthetic**: High-contrast black and white design with clean typography.
 - **Secure Login**: Session-based authentication with auto-redirection for protected routes.
 - **Two-Step Registration**:
@@ -16,7 +16,7 @@ A sleek, professional, and minimalist **Black & White** authentication system. B
 - **Proactive Security**: Real-time password requirement checklist (Uppercase, Number, Special Character, Min-8 Length).
 - **Protected Dashboard**: A secure `index.html` that displays authenticated user profile information.
 
-## 🚀 Quick Setup
+## Quick Setup
 
 ### 1. Database Configuration
 Execute the [supabase_setup.sql](./supabase_setup.sql) script in your Supabase SQL Editor. This will:
@@ -34,7 +34,7 @@ const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 ### 3. Deploy
 Simply host the files or open `login.html` locally to begin the authentication flow.
 
-## 📝 License
+## License
 This project is for tactical and educational purposes. Feel free to modify and integrate into your existing web structures.
 
 ---
