@@ -37,5 +37,3 @@ Simply host the files or open `login.html` locally to begin the authentication f
 ## License
 This project is for tactical and educational purposes. Feel free to modify and integrate into your existing web structures.
 
----
-*Created for the Major Web Project Command Center.*
