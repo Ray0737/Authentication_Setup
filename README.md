@@ -24,6 +24,14 @@ Execute the [supabase_setup.sql](./supabase_setup.sql) script in your Supabase S
 - Link it to the Supabase Auth system.
 - Enable **Row Level Security (RLS)** policies so users can only access their own data.
 
+> [!IMPORTANT]
+> **Disable Email Confirmation for Instant Registration:**
+> By default, Supabase requires users to confirm their email before they can write data to the `profiles` table. For clinical/development purposes:
+> 1. Go to your **Supabase Dashboard**.
+> 2. Navigate to **Authentication** -> **Settings**.
+> 3. Under **User Management**, toggle **"Confirm email"** to **OFF**.
+> 4. Click **Save** at the bottom.
+
 ### 2. Connect Your App
 Open [auth.js](./auth.js) and update your Supabase project credentials:
 ```javascript
