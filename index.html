@@ -4,118 +4,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to the Project Hub</title>
+    <title>Engineering Hub | Major Web</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;800&display=swap" rel="stylesheet">
+    <!-- Fonts: LINE Seed & Inter -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sunn-us/Lineseed-Sans-TH/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="style.css">
-    <meta name="description"
-        content="Welcome to the Project Hub. A secure portal for tactical information and project management.">
 </head>
 
-<body class="bg-black">
-    <!-- Transparent Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent fixed-top py-3 animate-fade-in">
-        <div class="container uppercase">
-            <a class="navbar-brand fw-bold letter-spacing-2" href="#">AIM HIGH</a>
-            <div class="ms-auto">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link small tracking-wider opacity-75 hover-opacity-100"
-                            href="https://profilewebsiteprojecttrack.vercel.app/index.html" target="_blank">TACTICAL
-                            PROFILE</a>
-                    </li>
-                </ul>
+<body class="bg-black text-white" style="font-family: 'LINE Seed Sans TH', sans-serif;">
+    <!-- Ultra-Minimalist Transparent Nav -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top py-4 bg-transparent">
+        <div class="container px-4">
+            <a class="navbar-brand fw-bold tracking-widest text-uppercase" href="#"
+                style="font-size: 0.8rem; letter-spacing: 4px;">
+                <span class="text-warning">●</span> Engineering_Roadmap
+            </a>
+            <div class="ms-auto d-flex align-items-center gap-4">
+                <div class="d-flex align-items-center gap-2 pe-4 border-end border-white-10">
+                    <a href="https://profilewebsiteprojecttrack.vercel.app/proj.html"
+                        class="btn btn-outline-warning btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 32px; height: 32px; border-width: 1px; font-size: 0.8rem;" title="Projects">
+                        <i class="bi bi-folder2-open"></i>
+                    </a>
+                    <a href="https://github.com/Ray0737" target="_blank"
+                        class="btn btn-outline-warning btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 32px; height: 32px; border-width: 1px; font-size: 0.8rem;" title="GitHub">
+                        <i class="bi bi-github"></i>
+                    </a>
+                </div>
+                <div class="d-flex align-items-center gap-4 ps-2">
+                    <a class="text-white fw-light text-uppercase tracking-widest text-decoration-none hover-warning d-flex align-items-center gap-2"
+                        style="font-size: 0.8rem; letter-spacing: 4px;" href="authen/login.html">
+                        <i class="bi bi-person-fill"></i> Login
+                    </a>
+                    <a class="btn btn-outline-light btn-xs text-uppercase fw-bold px-4 rounded-0 d-flex align-items-center gap-2"
+                        style="font-size: 0.65rem; border-width: 2px; padding: 0.5rem 1.5rem;"
+                        href="authen/register.html">
+                        <i class="bi bi-person-plus-fill"></i> Register
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Video Background Container -->
-    <div class="hero-video-container">
-        <!-- You can replace the source with your own mp4 video -->
-        <video autoplay muted loop playsinline poster="project_hub_bg_1774943597081.png">
-            <source src="pic/bg2.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-        <div class="video-overlay"></div>
-    </div>
-
-    <!-- Main Content Layer -->
-    <main class="hero-content container">
-
-
-        <div class="scroll-indicator">
-            <i class="bi bi-chevron-down text-white-50 fs-2"></i>
+    <!-- Full Hero Section -->
+    <header class="hero-section" style="height: 100vh; overflow: hidden; position: relative;">
+        <div class="hero-video-container" style="filter: grayscale(0.4) contrast(1.2) brightness(0.7); height: 100%;">
+            <video autoplay muted loop playsinline class="w-100 h-100" style="object-fit: cover;">
+                <source src="pic/bg2.mp4" type="video/mp4">
+            </video>
+            <div class="video-overlay"
+                style="background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9));"></div>
         </div>
+    </header>
 
-        <div class="credits-overlay animate-fade-in">
-            <p>Source: United States Navy (Carrier Operation)</p>
-        </div>
-    </main>
 
-    <!-- Authentication Section (Scroll below hero) -->
-    <section class="auth-section bg-black position-relative z-3 py-5">
-        <div class="container py-5">
-            <div class="row justify-content-center g-4">
-                <!-- Login Card -->
-                <div class="col-md-5">
-                    <a href="authen/login.html" class="access-portal-card">
-                        <div class="card-content text-center border">
-                            <h2 class="fw-light letter-spacing-2 m-0">ACCESS TERMINAL</h2>
-                            <p class="text-white-50 mt-1 mb-4">SECURE OPERATIVE LOGIN</p>
-                            <span class="btn btn-outline-light rounded-0 px-4 py-1 small">ENTER HUB</span>
-                        </div>
-                    </a>
-                </div>
-                <!-- Register Card -->
-                <div class="col-md-5">
-                    <a href="authen/register.html" class="access-portal-card border-white">
-                        <div class="card-content text-center border bg-white text-black">
-                            <h2 class="fw-light letter-spacing-2 m-0 text-black">ENLISTMENT</h2>
-                            <p class="text-black-50 mt-1 mb-4">JOIN THE COMMAND NETWORK</p>
-                            <span class="btn btn-black rounded-0 px-4 py-1 small">INITIALIZE</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
-            <div class="text-center mt-5">
-                <p class="small text-muted letter-spacing-2">SYSTEM CLASSIFIED | PROJECT HUB V1.0</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Simple animation trigger on load
-        window.addEventListener('DOMContentLoaded', () => {
-            document.querySelector('.hero-content').classList.add('ready');
-        });
-    </script>
     <style>
-        .animate-fade-in {
-            opacity: 0;
-            animation: fadeInSimple 1.5s ease forwards;
+        .tracking-multi {
+            letter-spacing: -0.05em;
         }
 
-        .animate-slide-up {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: slideUpSimple 1.2s ease 0.5s forwards;
+        .hover-warning {
+            transition: color 0.3s ease;
         }
 
-        @keyframes fadeInSimple {
-            to {
-                opacity: 1;
-            }
+        .hover-warning:hover {
+            color: #ffc107 !important;
         }
 
-        @keyframes slideUpSimple {
-            to {
-                opacity: 1;
+        .animate-bounce {
+            animation: bounce 2s infinite;
+        }
+
+        .transition-all {
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .hover-border-warning:hover {
+            border-color: #ffc107 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 193, 7, 0.1);
+        }
+
+        .hover-border-white:hover {
+            border-color: #fff !important;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.05);
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
                 transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-5px);
+            }
+
+            60% {
+                transform: translateY(-3px);
             }
         }
     </style>
