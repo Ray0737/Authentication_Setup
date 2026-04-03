@@ -194,32 +194,40 @@
                                 <div class="py-5 text-muted text-center small">COMMUNICATIONS OFFLINE. SELECT FREQUENCY.
                                 </div>
                             </div>
-                            <div class="chat-input-area p-2 border-top d-none" id="chatInputArea">
-                                <form id="chatMessageForm">
+                            <div class="chat-input-area p-0 border-top d-none" id="chatInputArea">
+                                <div id="replyPreviewArea" class="d-none px-3 py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+                                    <div class="x-small">
+                                        <span class="text-muted text-uppercase fw-bold d-block" style="font-size: 0.45rem; letter-spacing: 1px;">REPLYING_TO:</span>
+                                        <p id="replyPreviewText" class="m-0 fw-bold text-truncate text-uppercase" style="font-size: 0.6rem; max-width: 250px;"></p>
+                                    </div>
+                                    <i class="bi bi-x-circle-fill cursor-pointer text-danger" onclick="cancelReply()" style="font-size: 0.8rem;"></i>
+                                </div>
+                                <form id="chatMessageForm" class="p-2">
                                     <div class="input-group input-group-sm">
-                                        <label class="btn btn-outline-dark border-0 rounded-0" for="chatImageInput">
-                                            <i class="bi bi-image"></i>
-                                            <input type="file" id="chatImageInput" class="d-none" accept="image/*">
+                                        <label class="btn btn-outline-dark border-0 rounded-0 d-flex align-items-center px-3" for="chatImageInput" title="ATTACH_TRANSMISSION_FILE">
+                                            <i class="bi bi-paperclip" style="font-size: 1rem;"></i>
+                                            <input type="file" id="chatImageInput" class="d-none">
                                         </label>
                                         <input type="text" id="chatInput"
                                             class="form-control border-0 bg-light px-3 rounded-0"
-                                            placeholder="TRANSMIT MESSAGE..."
-                                            style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                            placeholder="ENTER TRANSMISSION DATA..."
+                                            style="font-size: 0.75rem; letter-spacing: 0.5px; font-weight: 500;">
                                         <button
-                                            class="btn btn-black btn-xs px-3 rounded-0 d-flex align-items-center gap-2"
+                                            class="btn btn-black btn-xs px-4 rounded-0 d-flex align-items-center gap-2"
                                             type="submit">
-                                            <span class="d-none d-sm-inline"
-                                                style="font-size: 0.55rem; letter-spacing: 1.5px;">TRANSMIT</span>
+                                            <span class="d-none d-sm-inline fw-black"
+                                                style="font-size: 0.6rem; letter-spacing: 1px;">SEND</span>
                                             <i class="bi bi-send-fill" style="font-size: 0.8rem;"></i>
                                         </button>
                                     </div>
                                     <div id="imagePreviewArea" class="mt-2 d-none">
-                                        <span
-                                            class="badge bg-light text-dark border p-2 small d-flex align-items-center gap-2">
-                                            <i class="bi bi-file-image"></i> <span id="fileNameDisplay">IMAGE.JPG</span>
-                                            <i class="bi bi-x-circle-fill text-danger ms-2" style="cursor:pointer"
-                                                id="clearImage"></i>
-                                        </span>
+                                        <div class="badge bg-light text-dark border-start border-3 border-dark p-2 d-flex align-items-center gap-3 rounded-0 shadow-sm">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-file-earmark-arrow-up-fill text-primary"></i>
+                                                <span id="fileNameDisplay" class="fw-black text-uppercase" style="font-size: 0.55rem; letter-spacing: 1px;">UPLOAD_READY.PNG</span>
+                                            </div>
+                                            <i class="bi bi-x-lg text-danger cursor-pointer" style="font-size: 0.7rem;" id="clearImage"></i>
+                                        </div>
                                     </div>
                                 </form>
                             </div>
@@ -497,9 +505,8 @@
         </div>
     </div>
 
-    <!-- View Members Modal -->
     <div class="modal fade" id="groupMembersModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-dialog modal-md modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                     <h6 class="text-uppercase tracking-wider m-0 fw-bold small">UNIT COMPOSITION</h6>

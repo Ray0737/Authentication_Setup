@@ -420,17 +420,26 @@ import { supabase } from './authen/auth.js';
                 return;
             }
 
-            // 2. Join logical team (First existing or new Main Roster)
+            // 2. Join logical team
             let joinError = null;
-            if (bookings && bookings.length > 0) {
-                const b = bookings[0];
-                const newIds = [...(b.member_ids || []), currentProfile.id];
-                const { error } = await supabase.from('intelligence_booking').update({ member_ids: newIds }).eq('id', b.id);
+            
+            // Prioritize joining the Lead's team (UNIT_LEAD) or the first available team
+            const leadTeam = (bookings || []).find(b => b.slot_code === 'UNIT_LEAD');
+            const targetTeam = leadTeam || (bookings && bookings.length > 0 ? bookings[0] : null);
+
+            if (targetTeam) {
+                const newIds = [...(targetTeam.member_ids || []), currentProfile.id];
+                const { error } = await supabase.from('intelligence_booking').update({ member_ids: newIds }).eq('id', targetTeam.id);
                 joinError = error;
             } else {
+                // If NO bookings exist at all, create a new one using the Operative's name or a prompt
+                // But since they asked for "just click join", we'll use a prompt here as a fallback for missing teams
+                const customName = prompt("IDENTIFY YOUR UNIT / TEAM NAME:", "ALPHA_UNIT");
+                if (!customName) return; // Cancelled
+
                 const { error } = await supabase.from('intelligence_booking').insert([{
                     hub_id: hubId,
-                    team_name: 'PRIMARY_UNIT',
+                    team_name: customName,
                     member_ids: [currentProfile.id],
                     slot_code: 'UNIT_MAIN'
                 }]);
@@ -527,24 +536,41 @@ import { supabase } from './authen/auth.js';
         if (addNewsForm) {
             addNewsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const newsId = document.getElementById('news-id').value;
-                const title = document.getElementById('news-title').value;
-                const status = document.getElementById('news-status').value;
-                const tagsStr = document.getElementById('news-tags').value;
-                const description = document.getElementById('news-desc').value;
-                const tags = tagsStr.split(',').map(t => t.trim());
+                try {
+                    const newsId = document.getElementById('news-id').value;
+                    const title = document.getElementById('news-title').value;
+                    const status = document.getElementById('news-status').value;
+                    const tagsStr = document.getElementById('news-tags').value;
+                    const description = document.getElementById('news-desc').value;
+                    const tags = tagsStr.split(',').map(t => t.trim());
 
-                const newsData = { title, status, tags, description };
-                let req;
-                if (newsId) {
-                    req = supabase.from('intelligence_hub').update(newsData).eq('id', newsId);
-                } else {
-                    newsData.created_by = currentProfile?.id;
-                    req = supabase.from('intelligence_hub').insert([newsData]);
-                }
+                    const teamNameInput = document.getElementById('news-team-name');
+                    const teamName = teamNameInput ? teamNameInput.value.trim() : '';
 
-                const { error } = await req;
-                if (!error) {
+                    const newsData = { title, status, tags, description };
+                    
+                    if (newsId) {
+                        const { error } = await supabase.from('intelligence_hub').update(newsData).eq('id', newsId);
+                        if (!error && teamName) {
+                            // Update lead booking
+                            await supabase.from('intelligence_booking').update({ team_name: teamName }).eq('hub_id', newsId).eq('slot_code', 'UNIT_LEAD');
+                        }
+                        if (error) throw error;
+                    } else {
+                        newsData.created_by = currentProfile?.id;
+                        const { data: inserted, error } = await supabase.from('intelligence_hub').insert([newsData]).select();
+                        if (error) throw error;
+                        
+                        if (inserted && inserted.length > 0 && teamName) {
+                            await supabase.from('intelligence_booking').insert([{
+                                hub_id: inserted[0].id,
+                                team_name: teamName,
+                                member_ids: [currentProfile.id],
+                                slot_code: 'UNIT_LEAD'
+                            }]);
+                        }
+                    }
+
                     bootstrap.Modal.getInstance(document.getElementById('addNewsModal')).hide();
                     addNewsForm.reset();
                     document.getElementById('news-id').value = '';
@@ -552,19 +578,25 @@ import { supabase } from './authen/auth.js';
                     document.getElementById('addNewsSubmitBtn').innerText = 'POST_ANNOUNCEMENT';
                     initNewsModule();
                     tacticalNotify(newsId ? 'POST UPDATED' : 'ANNOUNCEMENT POSTED');
-                } else {
-                    alert('UPLOAD ERROR: ' + error.message);
+                } catch (err) {
+                    alert('OPERATION_FAILED: ' + err.message);
                 }
             });
         }
 
-        window.editNews = (newsJson) => {
+        window.editNews = async (newsJson) => {
             const news = JSON.parse(decodeURIComponent(newsJson));
             document.getElementById('news-id').value = news.id;
             document.getElementById('news-title').value = news.title;
             document.getElementById('news-status').value = news.status;
             document.getElementById('news-tags').value = (news.tags || []).join(', ');
             document.getElementById('news-desc').value = news.description;
+
+            // Load existing team name if Lead
+            const { data: booking } = await supabase.from('intelligence_booking').select('team_name').eq('hub_id', news.id).eq('slot_code', 'UNIT_LEAD').limit(1).single();
+            if (document.getElementById('news-team-name')) {
+                document.getElementById('news-team-name').value = booking ? booking.team_name : '';
+            }
 
             document.getElementById('addNewsModalTitle').innerText = 'EDIT_RECRUITMENT_POST';
             document.getElementById('addNewsSubmitBtn').innerText = 'COMMIT_CHANGES';
@@ -863,6 +895,22 @@ import { supabase } from './authen/auth.js';
             loadMessages(id);
         };
         let selectedChatFile = null;
+        let replyTo = null;
+        window.initReply = (id, sender, text) => {
+            replyTo = { id, sender, text };
+            const preview = document.getElementById('replyPreviewArea');
+            const previewText = document.getElementById('replyPreviewText');
+            if (preview && previewText) {
+                previewText.innerText = `${sender.toUpperCase()}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`;
+                preview.classList.remove('d-none');
+            }
+        };
+        window.cancelReply = () => {
+            replyTo = null;
+            const preview = document.getElementById('replyPreviewArea');
+            if (preview) preview.classList.add('d-none');
+        };
+
         async function loadMessages(groupId) {
             const feed = document.getElementById('chatMessageFeed');
             const { data: messages, error } = await supabase
@@ -973,30 +1021,52 @@ import { supabase } from './authen/auth.js';
                     const textValue = input.value.trim();
                     if (!textValue && !selectedChatFile) return false;
 
-                    let imageUrl = null;
+                    let fileUrl = null;
+                    let fileName = null;
+                    let isImage = false;
+
                     if (selectedChatFile) {
-                        const fileExt = selectedChatFile.name.split('.').pop();
-                        const fileName = `${Math.random()}.${fileExt}`;
-                        const filePath = `chat_assets/${groupId}/${fileName}`;
+                        const fileExt = selectedChatFile.name.split('.').pop().toLowerCase();
+                        // Robust image detection
+                        isImage = selectedChatFile.type.startsWith('image/') || 
+                                 ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(fileExt);
+                                 
+                        const fName = `${Math.random()}.${fileExt}`;
+                        const filePath = `chat_assets/${groupId}/${fName}`;
+                        
                         const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedChatFile);
-                        if (!uploadError) {
-                            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-                            imageUrl = publicUrl;
+                        if (uploadError) {
+                            tacticalNotify(`UPLOAD_ERR: ${uploadError.message.toUpperCase()}`);
+                            console.error('File Upload Error:', uploadError);
+                            return false;
                         }
+
+                        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                        fileUrl = publicUrl;
+                        fileName = selectedChatFile.name;
                     }
 
-                    const { error: sendError } = await supabase.from('messages').insert([{
+                    const messageData = {
                         group_id: groupId,
                         sender_id: currentProfile.id,
                         text: textValue,
-                        image_url: imageUrl
-                    }]);
+                        image_url: isImage ? fileUrl : null,
+                        file_url: !isImage ? fileUrl : null,
+                        file_name: !isImage ? fileName : null
+                    };
+
+                    if (replyTo) {
+                        messageData.reply_to_id = replyTo.id;
+                        messageData.reply_context = { sender: replyTo.sender, text: replyTo.text };
+                    }
+
+                    const { error: sendError } = await supabase.from('messages').insert([messageData]);
 
                     if (!sendError) {
                         input.value = '';
                         selectedChatFile = null;
+                        cancelReply();
                         if (previewArea) previewArea.classList.add('d-none');
-                        // No need for loadMessages(groupId) here, handled by real-time listener
                     }
                     return false;
                 };
@@ -1006,12 +1076,35 @@ import { supabase } from './authen/auth.js';
         function renderMessageHtml(m) {
             const isMe = m.sender_id === currentProfile.id;
             const name = isMe ? 'ME' : (m.profiles?.callsign || profileCache.get(m.sender_id) || 'OPERATIVE');
+            
+            let replyHtml = '';
+            if (m.reply_context) {
+                replyHtml = `
+                    <div class="p-1 px-2 mb-1 bg-secondary bg-opacity-25 border-start border-3 border-dark x-small" style="text-align: left; opacity: 0.8; font-size: 0.55rem;">
+                        <span class="fw-black text-uppercase d-block">${m.reply_context.sender}</span>
+                        <span class="text-truncate d-block" style="max-width: 15rem;">${m.reply_context.text || 'ATTACHMENT'}</span>
+                    </div>
+                `;
+            }
+
             return `
-                <div class="msg-line px-3 ${isMe ? 'text-end' : 'text-start'} mb-1">
-                    <span class="sender small ${isMe ? 'text-primary' : 'text-dark'}" style="font-size: 0.6rem;">${name}</span>
+                <div class="msg-line px-3 ${isMe ? 'text-end' : 'text-start'} mb-2 group">
+                    <div class="d-flex align-items-center gap-2 ${isMe ? 'flex-row-reverse' : ''}">
+                        <span class="sender small fw-bold ${isMe ? 'text-primary' : 'text-dark'}" style="font-size: 0.55rem; letter-spacing: 0.5px;">${name.toUpperCase()}</span>
+                        <div class="msg-reply-trigger opacity-0 cursor-pointer" onclick="initReply('${m.id}', '${name}', '${(m.text || '').replace(/'/g, "\\'")}')" title="REPLY">
+                            <i class="bi bi-reply-fill text-muted" style="font-size: 0.8rem;"></i>
+                        </div>
+                    </div>
                     <div class="msg-content d-flex flex-column ${isMe ? 'align-items-end' : 'align-items-start'}">
-                        ${m.text ? `<span class="msg-text p-2 bg-light border ${isMe ? 'rounded-start' : 'rounded-end'}" style="max-width: 80%;">${m.text}</span>` : ''}
-                        ${m.image_url ? `<img src="${m.image_url}" class="img-fluid border rounded shadow-sm mt-1" style="max-width: 200px; cursor: pointer;" onclick="window.open('${m.image_url}')">` : ''}
+                        ${replyHtml}
+                        ${m.text ? `<span class="msg-text p-2 bg-light border ${isMe ? 'rounded-start shadow-sm' : 'rounded-end'} fw-medium" style="max-width: 85%; font-size: 0.75rem;">${m.text}</span>` : ''}
+                        ${m.image_url ? `<img src="${m.image_url}" class="img-fluid border rounded shadow-sm mt-1" style="max-width: 200px; cursor: pointer; transition: transform 0.2s;" onclick="window.open('${m.image_url}')" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">` : ''}
+                        ${m.file_url ? `
+                            <div class="p-2 border bg-white mt-1 d-flex align-items-center gap-2 shadow-sm hover-bg-light transition" style="cursor: pointer; max-width: 200px;" onclick="window.open('${m.file_url}')">
+                                <i class="bi bi-file-earmark-text text-primary"></i>
+                                <span class="x-small fw-bold text-truncate" style="font-size: 0.5rem; letter-spacing: 0.5px;">${(m.file_name || 'ATTACHMENT').toUpperCase()}</span>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1065,22 +1158,33 @@ import { supabase } from './authen/auth.js';
         }
 
         async function leaveGroup(groupId) {
-            minimalConfirm('EXIT THIS PROJECT ENTITY?', async () => {
-                const { data: group } = await supabase.from('groups').select('members').eq('id', groupId).single();
-                const newMembers = group.members.filter(m => m !== currentProfile.id);
-                const { error } = await supabase.from('groups').update({ members: newMembers }).eq('id', groupId);
-                if (!error) {
-                    activeGroupId = null;
-                    showFeature('chat');
-                    tacticalNotify('UNIT EXITED');
+            minimalConfirm('EXIT THIS PROJECT ENTITY? YOU WILL BE DE-COUPLED FROM RECRUITMENT ENTITY AS WELL.', async () => {
+                const { data: group } = await supabase.from('groups').select('members, linked_hub_id').eq('id', groupId).single();
+                const newMembers = (group.members || []).filter(m => m !== currentProfile.id);
+                
+                await supabase.from('groups').update({ members: newMembers }).eq('id', groupId);
+                
+                if (group.linked_hub_id) {
+                    const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', group.linked_hub_id);
+                    if (bookings) {
+                        for (const bk of bookings) {
+                            if ((bk.member_ids || []).includes(currentProfile.id)) {
+                                const newBKMems = bk.member_ids.filter(m => m !== currentProfile.id);
+                                await supabase.from('intelligence_booking').update({ member_ids: newBKMems }).eq('id', bk.id);
+                            }
+                        }
+                    }
                 }
+                
+                activeGroupId = null;
+                showFeature('chat');
+                tacticalNotify('UNIT_EXITED // DISCONNECTED');
             });
         }
 
-        window.tempGroupData = {};
         async function viewMembers(groupId) {
-            const { data: group } = await supabase.from('groups').select('members, created_by').eq('id', groupId).single();
-            const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url'); // Load all for adding
+            const { data: group } = await supabase.from('groups').select('members, created_by, title').eq('id', groupId).single();
+            const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
             const isCreator = group.created_by === currentProfile?.id;
 
             const groupMembers = profiles.filter(p => (group.members || []).includes(p.id));
@@ -1089,26 +1193,33 @@ import { supabase } from './authen/auth.js';
             const container = document.getElementById('membersListContainer');
 
             let html = groupMembers.map(p => `
-                <div class="p-2 border-bottom d-flex align-items-center justify-content-between">
+                <div class="p-2 py-3 border-bottom d-flex align-items-center justify-content-between hover-bg-light transition">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-dark d-flex align-items-center justify-content-center overflow-hidden" style="width: 35px; height: 35px;">
+                        <div class="rounded-circle bg-dark d-flex align-items-center justify-content-center border border-2 border-dark" style="width: 32px; height: 32px; overflow: hidden;">
                             ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%; height:100%; object-fit:cover;">` : `<i class="bi bi-person text-white"></i>`}
                         </div>
-                        <p class="m-0 small fw-bold text-uppercase">${p.callsign || 'AGENT'}</p>
+                        <div>
+                            <p class="m-0 x-small fw-black text-uppercase lh-1" style="font-size: 0.65rem;">${p.callsign || 'AGENT'}</p>
+                            <span class="text-muted" style="font-size: 0.45rem; letter-spacing: 0.5px;">OPERATIVE // ACTIVE</span>
+                        </div>
                     </div>
                     <div class="d-flex gap-1">
-                        <button class="btn btn-outline-dark btn-xs px-2" onclick="viewUserProfile('${p.id}')">Dossier</button>
-                        ${isCreator && p.id !== currentProfile.id ? `<button class="btn btn-outline-danger btn-xs px-2" onclick="removeGroupMember('${groupId}', '${p.id}')"><i class="bi bi-x-lg"></i></button>` : ''}
+                        <button class="btn btn-black btn-xs px-2 fw-black" style="font-size: 0.45rem;" onclick="viewUserProfile('${p.id}')">DOSSIER</button>
+                        ${isCreator && p.id !== currentProfile.id ? `
+                            <button class="btn btn-outline-danger btn-xs px-2" style="font-size: 0.45rem;" onclick="minimalConfirm('DISMISS ${p.callsign?.toUpperCase() || 'OPERATIVE'} FROM PROJECT?', () => removeGroupMember('${groupId}', '${p.id}'), true)" title="KICK">
+                                <i class="bi bi-person-x-fill"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('') || '<p class="text-center text-muted small p-4">NO MEMBERS LISTED</p>';
 
             if (isCreator && nonMembers.length > 0) {
                 html += `
-                    <div class="mt-3 p-2 bg-light border">
-                        <p class="x-small fw-bold text-uppercase mb-2 text-muted">Add Member</p>
-                        <select class="form-select form-select-sm minimal-input-sm" id="addGroupMemberSelect" onchange="addGroupMember('${groupId}', this.value)">
-                            <option value="">-- SELECT OPERATIVE --</option>
+                    <div class="mt-3 p-3 bg-light border-start border-3 border-dark">
+                        <p class="x-small fw-black text-uppercase mb-2 text-muted" style="letter-spacing: 1px;">ADD_OPERATIVE</p>
+                        <select class="form-select form-select-sm minimal-input-sm x-small fw-bold text-uppercase" id="addGroupMemberSelect" onchange="addGroupMember('${groupId}', this.value)" style="font-size: 0.55rem;">
+                            <option value="">-- SELECT PERSONNEL --</option>
                             ${nonMembers.map(nm => `<option value="${nm.id}">${nm.callsign || 'OPERATIVE_' + nm.id.substring(0, 4)}</option>`).join('')}
                         </select>
                     </div>
@@ -1119,15 +1230,40 @@ import { supabase } from './authen/auth.js';
             window.tempGroupData[groupId] = group.members || [];
 
             const modalEl = document.getElementById('groupMembersModal');
+            document.querySelector('#groupMembersModal h6').innerText = `UNIT_COMPOSITION // ${group.title.toUpperCase()}`;
+            
             if (!modalEl.classList.contains('show')) {
                 new bootstrap.Modal(modalEl).show();
             }
         }
 
         window.removeGroupMember = async (groupId, userId) => {
-            const mems = window.tempGroupData[groupId].filter(id => id !== userId);
-            await supabase.from('groups').update({ members: mems }).eq('id', groupId);
+            const { data: group, error: fetchError } = await supabase.from('groups').select('members, linked_hub_id').eq('id', groupId).single();
+            if (fetchError) { tacticalNotify(`ERR: ${fetchError.message.toUpperCase()}`); return; }
+            
+            const mems = (group.members || []).filter(id => id !== userId);
+            
+            // 1. Update Group Members
+            const { error: groupError } = await supabase.from('groups').update({ members: mems }).eq('id', groupId);
+            if (groupError) { tacticalNotify(`KICK_ERR: ${groupError.message.toUpperCase()}`); console.error(groupError); return; }
+            
+            // 2. Clear from Recruitment Hub if linked (Actual Sync Remove)
+            if (group.linked_hub_id) {
+                const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', group.linked_hub_id);
+                if (bookings) {
+                    for (const bk of bookings) {
+                        const mIds = bk.member_ids || [];
+                        if (mIds.includes(userId)) {
+                            const newBKMems = mIds.filter(m => m !== userId);
+                            const { error: bkError } = await supabase.from('intelligence_booking').update({ member_ids: newBKMems }).eq('id', bk.id);
+                            if (bkError) console.error("Roster Sync Failure:", bkError);
+                        }
+                    }
+                }
+            }
+
             viewMembers(groupId);
+            tacticalNotify('OPERATIVE_DISMISSED // SYNC_SUCCESS');
         };
 
         window.addGroupMember = async (groupId, userId) => {
