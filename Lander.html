@@ -31,7 +31,10 @@
                             class="bi bi-calendar3"></i></button>
                     <button id="newsBtn" title="Intelligence Hub"
                         class="btn btn-outline-dark btn-sm rounded-1 border-0 nav-icon-btn"><i
-                            class="bi bi-newspaper"></i></button>
+                            class="bi bi-person-workspace"></i></button>
+                    <button id="classBtn" title="Academy Module"
+                        class="btn btn-outline-dark btn-sm rounded-1 border-0 nav-icon-btn"><i
+                            class="bi bi-journal-bookmark"></i></button>
                     <div class="ms-2 border-start ps-3 py-1">
                         <span class="fw-bold tracking-widest text-uppercase text-muted"
                             style="font-size: 0.6rem; letter-spacing: 3px;"></span>
@@ -50,17 +53,15 @@
                         </div>
                         <div id="mini-avatar"
                             class="rounded-circle border bg-light d-flex align-items-center justify-content-center"
-                            style="width: 28px; height: 28px; overflow: hidden;">
+                            style="width: 28px; height: 28px; overflow: hidden; cursor: pointer;"
+                            onclick="viewUserProfile()">
                             <i class="bi bi-person text-muted" style="font-size: 0.8rem;"></i>
                         </div>
                     </div>
-                    <div class="d-flex gap-1">
-                        <button id="viewProfileBtn" title="View Dossier"
-                            class="btn btn-outline-dark btn-sm rounded-1 border-0 nav-icon-btn"
-                            onclick="viewUserProfile()"><i class="bi bi-person-badge"></i></button>
+                    <div class="d-flex gap-1 align-items-center">
                         <button id="editProfileBtn" title="Edit Dossier"
                             class="btn btn-outline-dark btn-sm rounded-1 border-0 nav-icon-btn" data-bs-toggle="modal"
-                            data-bs-target="#editProfileModal"><i class="bi bi-pencil-square"></i></button>
+                            data-bs-target="#editProfileModal"><i class="bi bi-gear"></i></button>
                         <button id="logoutBtn" title="Terminate Session" class="btn btn-warning btn-sm rounded-1 ms-2"
                             style="padding: 0.35rem 0.75rem;"><i class="bi bi-power"></i></button>
                     </div>
@@ -139,10 +140,12 @@
                     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-dark pb-2">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-person-workspace text-muted x-small"></i>
-                            <h6 class="m-0 fw-black text-uppercase tracking-wider" style="font-size: 0.75rem; letter-spacing: 1.5px;">Work_Grid // Recruitment</h6>
+                            <h6 class="m-0 fw-black text-uppercase tracking-wider"
+                                style="font-size: 0.75rem; letter-spacing: 1.5px;">Work_Grid // Recruitment</h6>
                         </div>
-                        <button class="btn btn-black btn-xs px-3 py-1 fw-bold text-uppercase rounded-0" data-bs-toggle="modal"
-                            data-bs-target="#addNewsModal" style="font-size: 0.5rem; letter-spacing: 1px;">+ POST_ANNOUNCEMENT</button>
+                        <button class="btn btn-black btn-xs px-3 py-1 fw-bold text-uppercase rounded-0"
+                            data-bs-toggle="modal" data-bs-target="#addNewsModal"
+                            style="font-size: 0.5rem; letter-spacing: 1px;">+ POST_ANNOUNCEMENT</button>
                     </div>
                     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="newsContainer">
                         <div class="col-12 p-5 text-center text-muted x-small fw-bold tracking-widest">BOOTING
@@ -258,6 +261,84 @@
                         class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 d-none"
                         style="min-height: 500px;">
                         <!-- Cards injected here -->
+                    </div>
+                </div>
+
+                <!-- Academy Module -->
+                <div id="feature-class"
+                    class="card card-body border border-dark rounded-0 p-4 overflow-hidden d-none"
+                    style="min-height: 600px; background: #fff;">
+                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                        <h6 class="m-0 fw-bold text-uppercase tracking-wider d-flex align-items-center gap-2">
+                            <i class="bi bi-journal-bookmark fs-5"></i> ACADEMY DIRECTORY
+                        </h6>
+                    </div>
+                    
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 text-start">
+                        <!-- Math M.4 -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark d-flex flex-column hover-bg-light transition cursor-pointer">
+                                <h5 class="fw-black text-uppercase mb-1">Math M.4</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Core Mathematics for Grade 10.</p>
+                                <button class="btn btn-dark w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- Math M.5 -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark d-flex flex-column hover-bg-light transition cursor-pointer">
+                                <h5 class="fw-black text-uppercase mb-1">Math M.5</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Core Mathematics for Grade 11.</p>
+                                <button class="btn btn-dark w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- Math M.6 -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark d-flex flex-column hover-bg-light transition cursor-pointer">
+                                <h5 class="fw-black text-uppercase mb-1">Math M.6</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Core Mathematics for Grade 12.</p>
+                                <button class="btn btn-dark w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- Physics M.4 -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark d-flex flex-column hover-bg-light transition cursor-pointer">
+                                <h5 class="fw-black text-uppercase mb-1">Physics M.4</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Foundation Physics for Grade 10.</p>
+                                <button class="btn btn-dark w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- Physics M.5 -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark d-flex flex-column hover-bg-light transition cursor-pointer">
+                                <h5 class="fw-black text-uppercase mb-1">Physics M.5</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Foundation Physics for Grade 11.</p>
+                                <button class="btn btn-dark w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- Physics M.6 -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark d-flex flex-column hover-bg-light transition cursor-pointer">
+                                <h5 class="fw-black text-uppercase mb-1">Physics M.6</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Foundation Physics for Grade 12.</p>
+                                <button class="btn btn-dark w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- SAT RW -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark border-opacity-50 d-flex flex-column hover-bg-light transition cursor-pointer shadow-sm">
+                                <h5 class="fw-black text-uppercase mb-1 text-danger">SAT RW</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Reading & Writing Prep.</p>
+                                <button class="btn btn-danger w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
+                        <!-- SAT Math -->
+                        <div class="col">
+                            <div class="tactical-card h-100 p-4 border border-dark border-opacity-50 d-flex flex-column hover-bg-light transition cursor-pointer shadow-sm">
+                                <h5 class="fw-black text-uppercase mb-1 text-danger">SAT Math</h5>
+                                <p class="text-muted small mb-4 flex-grow-1" style="font-size: 0.75rem;">Mathematics Prep.</p>
+                                <button class="btn btn-danger w-100 btn-sm rounded-0 text-uppercase fw-bold mt-auto tracking-wider" style="font-size: 0.65rem;">ENTER CLASS</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -446,24 +527,35 @@
 
                     <div class="text-start border-top pt-2">
                         <div class="mb-2">
-                            <label class="fw-bold text-uppercase text-muted"
-                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Institution</label>
-                            <p class="fw-bold m-0" style="font-size: 0.7rem;" id="dossierSchool">--</p>
+                            <label class="text-uppercase text-muted opacity-75"
+                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Operative Name</label>
+                            <p class="m-0 fw-medium" style="font-size: 0.7rem;" id="dossierName">--</p>
                         </div>
                         <div class="mb-2">
-                            <label class="fw-bold text-uppercase text-muted"
-                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Objective</label>
-                            <p class="fw-bold m-0" style="font-size: 0.7rem;" id="dossierMajor">--</p>
+                            <label class="text-uppercase text-muted opacity-75"
+                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Contact / Tel</label>
+                            <p class="m-0 fw-medium" style="font-size: 0.7rem;" id="dossierContact">--</p>
                         </div>
-                        <div class="mb-1 pb-2 border-bottom border-secondary-subtle">
-                            <label class="fw-bold text-uppercase text-muted"
+                        <div class="mb-2">
+                            <label class="text-uppercase text-muted opacity-75"
+                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Institution</label>
+                            <p class="m-0 fw-medium" style="font-size: 0.7rem;" id="dossierSchool">--</p>
+                        </div>
+                        <div class="mb-2">
+                            <label class="text-uppercase text-muted opacity-75"
+                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Objective</label>
+                            <p class="m-0 fw-medium" style="font-size: 0.7rem;" id="dossierMajor">--</p>
+                        </div>
+                        <div class="mb-1 pb-2 border-bottom border-light">
+                            <label class="text-uppercase text-muted opacity-75"
                                 style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Status</label>
-                            <p class="fw-bold m-0" style="font-size: 0.7rem;" id="dossierGrade">--</p>
+                            <p class="m-0 fw-medium" style="font-size: 0.7rem;" id="dossierGrade">--</p>
                         </div>
 
                         <div class="mt-2">
                             <label class="fw-bold text-uppercase text-muted"
-                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Active Deployments</label>
+                                style="font-size: 0.5rem; letter-spacing: 1px; display: block;">Active
+                                Deployments</label>
                             <div id="dossierComps" class="d-flex flex-column gap-1 mt-1">
                                 <p class="m-0 x-small text-muted py-1">NO_ACTIVE_MISSIONS</p>
                             </div>
@@ -742,23 +834,28 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border border-dark rounded-0 shadow-lg">
                 <div class="modal-header border-0 py-3 px-4 bg-light">
-                    <p class="modal-title x-small fw-black tracking-widest text-uppercase m-0" id="addNewsModalTitle" style="font-size: 0.6rem; letter-spacing: 2px;">RECRUITMENT_POST_SYSTEM</p>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.5rem;"></button>
+                    <p class="modal-title x-small fw-black tracking-widest text-uppercase m-0" id="addNewsModalTitle"
+                        style="font-size: 0.6rem; letter-spacing: 2px;">RECRUITMENT_POST_SYSTEM</p>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"
+                        style="font-size: 0.5rem;"></button>
                 </div>
                 <div class="modal-body p-4 bg-white">
                     <form id="addNewsForm">
                         <input type="hidden" id="news-id">
-                        
+
                         <div class="mb-3">
-                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.5rem; letter-spacing: 1px;">Project / Role Identifier</label>
-                            <input type="text" id="news-title" class="form-control rounded-0 border-dark shadow-none" 
+                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1"
+                                style="font-size: 0.5rem; letter-spacing: 1px;">Project / Role Identifier</label>
+                            <input type="text" id="news-title" class="form-control rounded-0 border-dark shadow-none"
                                 placeholder="e.g. Frontend Dev for Mission X..." required style="font-size: 0.75rem;">
                         </div>
-                        
+
                         <div class="row g-3 mb-3">
                             <div class="col-6">
-                                <label class="x-small text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.5rem; letter-spacing: 1px;">Priority Status</label>
-                                <select id="news-status" class="form-select rounded-0 border-dark shadow-none" style="font-size: 0.75rem;">
+                                <label class="x-small text-muted fw-bold text-uppercase d-block mb-1"
+                                    style="font-size: 0.5rem; letter-spacing: 1px;">Priority Status</label>
+                                <select id="news-status" class="form-select rounded-0 border-dark shadow-none"
+                                    style="font-size: 0.75rem;">
                                     <option>ACTIVE</option>
                                     <option>BOOKING OPEN</option>
                                     <option>CALL FOR ENTRIES</option>
@@ -767,57 +864,72 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="x-small text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.5rem; letter-spacing: 1px;">Resource Tags</label>
-                                <input type="text" id="news-tags" class="form-control rounded-0 border-dark shadow-none" 
+                                <label class="x-small text-muted fw-bold text-uppercase d-block mb-1"
+                                    style="font-size: 0.5rem; letter-spacing: 1px;">Resource Tags</label>
+                                <input type="text" id="news-tags" class="form-control rounded-0 border-dark shadow-none"
                                     placeholder="e.g., AI, CLOUD" style="font-size: 0.75rem;">
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.5rem; letter-spacing: 1px;">Detailed Briefing</label>
-                            <textarea id="news-desc" class="form-control rounded-0 border-dark shadow-none" rows="4" 
+                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1"
+                                style="font-size: 0.5rem; letter-spacing: 1px;">Detailed Briefing</label>
+                            <textarea id="news-desc" class="form-control rounded-0 border-dark shadow-none" rows="4"
                                 placeholder="Provide briefing data..." style="font-size: 0.75rem;"></textarea>
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-dark btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase" 
+                            <button type="button"
+                                class="btn btn-outline-dark btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase"
                                 data-bs-dismiss="modal" style="font-size: 0.55rem; letter-spacing: 1px;">Cancel</button>
-                            <button type="submit" id="addNewsSubmitBtn" class="btn btn-black btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase"
+                            <button type="submit" id="addNewsSubmitBtn"
+                                class="btn btn-black btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase"
                                 style="font-size: 0.55rem; letter-spacing: 1px;">POST_ANNOUNCEMENT</button>
                         </div>
                     </form>
                 </div>
             </div>
-            </div>
         </div>
     </div>
-    
+    </div>
+
     <!-- Enlist Modal -->
     <div class="modal fade" id="enlistModal" tabindex="-1" aria-hidden="true" style="z-index: 2000;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border border-dark rounded-0 shadow-lg">
                 <div class="modal-header border-0 py-3 px-4 bg-light">
-                    <p class="modal-title x-small fw-black tracking-widest text-uppercase m-0" id="enlistModalTitle" style="font-size: 0.6rem; letter-spacing: 2px;">UNIT_ENLISTMENT // NEW_DEPLOYMENT</p>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.5rem;"></button>
+                    <p class="modal-title x-small fw-black tracking-widest text-uppercase m-0" id="enlistModalTitle"
+                        style="font-size: 0.6rem; letter-spacing: 2px;">UNIT_ENLISTMENT // NEW_DEPLOYMENT</p>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"
+                        style="font-size: 0.5rem;"></button>
                 </div>
                 <div class="modal-body p-4 bg-white">
                     <form id="enlistForm">
                         <input type="hidden" id="enlist-hub-id">
                         <input type="hidden" id="enlist-mode" value="request">
                         <div class="mb-4" id="enlistTeamNameWrap">
-                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.55rem;">Team / Unit Name</label>
-                            <input type="text" id="enlist-team-name" class="form-control rounded-0 border-dark shadow-none" placeholder="Specify unit identifier..." required>
+                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1"
+                                style="font-size: 0.55rem;">Team / Unit Name</label>
+                            <input type="text" id="enlist-team-name"
+                                class="form-control rounded-0 border-dark shadow-none"
+                                placeholder="Specify unit identifier..." required>
                         </div>
                         <div class="mb-4">
-                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.55rem;">Deploy Available Operatives</label>
-                            <div id="enlist-member-list" class="border p-2 bg-light overflow-auto minimal-scroll" style="max-height: 15rem; border-style: dashed !important;">
+                            <label class="x-small text-muted fw-bold text-uppercase d-block mb-1"
+                                style="font-size: 0.55rem;">Deploy Available Operatives</label>
+                            <div id="enlist-member-list" class="border p-2 bg-light overflow-auto minimal-scroll"
+                                style="max-height: 15rem; border-style: dashed !important;">
                                 <div class="text-center p-3 text-muted x-small">LOADING OPERATIVES_GRID...</div>
                             </div>
-                            <span class="x-small text-muted mt-1 d-block" style="font-size: 0.45rem;">Note: Members already occupied in this operation are hidden.</span>
+                            <span class="x-small text-muted mt-1 d-block" style="font-size: 0.45rem;">Note: Members
+                                already occupied in this operation are hidden.</span>
                         </div>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-dark btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase shadow-none" data-bs-dismiss="modal">Abort</button>
-                            <button type="submit" class="btn btn-black btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase shadow-none">Initiate_Deployment</button>
+                            <button type="button"
+                                class="btn btn-outline-dark btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase shadow-none"
+                                data-bs-dismiss="modal">Abort</button>
+                            <button type="submit"
+                                class="btn btn-black btn-xs w-50 rounded-0 py-2 fw-bold text-uppercase shadow-none">Initiate_Deployment</button>
                         </div>
                     </form>
                 </div>
@@ -849,6 +961,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script type="module">
         import { supabase } from './authen/auth.js';
 
@@ -1131,7 +1244,7 @@
                 const creatorName = creator ? (creator.callsign || 'OPERATIVE') : 'UNKNOWN';
 
                 return `
-                <div class="col">
+                <div class="col" id="news-card-${c.id}">
                     <div class="tactical-card h-100 d-flex flex-column bg-white shadow-sm" style="border: 1px solid #ddd; transition: all 0.3s ease;">
                         <div class="p-4 flex-grow-1">
                             <div class="d-flex justify-content-between align-items-start mb-3">
@@ -1232,21 +1345,21 @@
             document.getElementById('enlistTeamNameWrap').classList.add('d-none');
             document.getElementById('enlist-team-name').value = 'Main Roster';
             document.getElementById('enlistModalTitle').innerText = `ROSTER_MGMT // ${title.toUpperCase()}`;
-            
+
             const memberListDiv = document.getElementById('enlist-member-list');
             memberListDiv.innerHTML = '<div class="text-center p-3 text-muted x-small">QUERYING_PERSONNEL...</div>';
             new bootstrap.Modal(document.getElementById('enlistModal')).show();
 
             const { data: bookings } = await supabase.from('intelligence_booking').select('member_ids').eq('hub_id', hubId);
             const allMemberIds = [...new Set((bookings || []).flatMap(b => b.member_ids || []))];
-            
+
             const { data: profiles } = await supabase.from('profiles').select('id, callsign');
             if (profiles) {
                 memberListDiv.innerHTML = profiles.map(p => `
                     <div class="form-check p-2 border-bottom border-secondary-subtle hover-bg-light transition">
                         <input class="form-check-input ms-0 me-3" type="checkbox" value="${p.id}" id="chk-${p.id}" name="enlistMembers" ${allMemberIds.includes(p.id) ? 'checked' : ''}>
                         <label class="form-check-label x-small fw-bold text-uppercase" for="chk-${p.id}" style="cursor:pointer; font-size: 0.7rem;">
-                            ${p.callsign || 'OPERATIVE_' + p.id.substring(0,4)}
+                            ${p.callsign || 'OPERATIVE_' + p.id.substring(0, 4)}
                         </label>
                     </div>
                 `).join('');
@@ -1260,19 +1373,19 @@
             document.getElementById('enlist-hub-id').value = hubId;
             document.getElementById('enlist-team-name').value = '';
             document.getElementById('enlistModalTitle').innerText = `UNIT_ENLISTMENT // ${title.toUpperCase()}`;
-            
+
             const memberListDiv = document.getElementById('enlist-member-list');
             memberListDiv.innerHTML = '<div class="text-center p-3 text-muted x-small">QUERYING_PERSONNEL...</div>';
-            
+
             new bootstrap.Modal(document.getElementById('enlistModal')).show();
 
             // Fetch occupied members for this hub
             const { data: bookings } = await supabase.from('intelligence_booking').select('member_ids').eq('hub_id', hubId);
             const occupiedIds = (bookings || []).flatMap(b => b.member_ids || []);
-            
+
             // Fetch all profiles
             const { data: profiles } = await supabase.from('profiles').select('id, callsign');
-            
+
             if (profiles) {
                 const available = profiles.filter(p => !occupiedIds.includes(p.id));
                 if (available.length === 0) {
@@ -1282,7 +1395,7 @@
                         <div class="form-check p-2 border-bottom border-secondary-subtle hover-bg-light transition">
                             <input class="form-check-input ms-0 me-3" type="checkbox" value="${p.id}" id="chk-${p.id}" name="enlistMembers">
                             <label class="form-check-label x-small fw-bold text-uppercase" for="chk-${p.id}" style="cursor:pointer; font-size: 0.7rem;">
-                                ${p.callsign || 'OPERATIVE_' + p.id.substring(0,4)}
+                                ${p.callsign || 'OPERATIVE_' + p.id.substring(0, 4)}
                             </label>
                         </div>
                     `).join('');
@@ -1311,7 +1424,7 @@
                         hub_id: hubId,
                         team_name: teamName,
                         member_ids: memberIds,
-                        slot_code: 'UNIT_' + (Math.random().toString(36).substring(2,5).toUpperCase())
+                        slot_code: 'UNIT_' + (Math.random().toString(36).substring(2, 5).toUpperCase())
                     }]);
                     if (!error) {
                         bootstrap.Modal.getInstance(document.getElementById('enlistModal')).hide();
@@ -1400,7 +1513,7 @@
             document.getElementById('news-status').value = news.status;
             document.getElementById('news-tags').value = (news.tags || []).join(', ');
             document.getElementById('news-desc').value = news.description;
-            
+
             document.getElementById('addNewsModalTitle').innerText = 'EDIT_RECRUITMENT_POST';
             document.getElementById('addNewsSubmitBtn').innerText = 'COMMIT_CHANGES';
             new bootstrap.Modal(document.getElementById('addNewsModal')).show();
@@ -1420,16 +1533,16 @@
 
                     // 3. Final record deletion
                     const { error, count } = await supabase.from('intelligence_hub').delete({ count: 'exact' }).eq('id', id);
-                    
+
                     if (error) {
                         console.error('Delete error:', error);
                         throw error;
                     }
-                    
+
                     if (count === 0) {
                         // Check if row actually exists
                         const { data: verify } = await supabase.from('intelligence_hub').select('id').eq('id', id).single();
-                        if (!verify) throw new Error(`NOT_FOUND: ROW_${id.substring(0,8)} MISSING`);
+                        if (!verify) throw new Error(`NOT_FOUND: ROW_${id.substring(0, 8)} MISSING`);
                         else throw new Error('RLS_DENIED: PLEASE ENABLE DELETE FOR OWNER IN SUPABASE POLICIES');
                     }
 
@@ -1450,7 +1563,7 @@
             const feature = document.getElementById(`feature-${type}`);
             if (!feature) return;
             const headBtn = document.getElementById(`${type}Btn`);
-            const types = ['home', 'chat', 'calendar', 'news'];
+            const types = ['home', 'chat', 'calendar', 'news', 'class'];
 
             const isOpening = feature.classList.contains('d-none');
 
@@ -1917,12 +2030,12 @@
             const { data: group } = await supabase.from('groups').select('members, created_by').eq('id', groupId).single();
             const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url'); // Load all for adding
             const isCreator = group.created_by === currentProfile?.id;
-            
+
             const groupMembers = profiles.filter(p => (group.members || []).includes(p.id));
             const nonMembers = profiles.filter(p => !(group.members || []).includes(p.id));
-            
+
             const container = document.getElementById('membersListContainer');
-            
+
             let html = groupMembers.map(p => `
                 <div class="p-2 border-bottom d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-3">
@@ -1944,7 +2057,7 @@
                         <p class="x-small fw-bold text-uppercase mb-2 text-muted">Add Member</p>
                         <select class="form-select form-select-sm minimal-input-sm" id="addGroupMemberSelect" onchange="addGroupMember('${groupId}', this.value)">
                             <option value="">-- SELECT OPERATIVE --</option>
-                            ${nonMembers.map(nm => `<option value="${nm.id}">${nm.callsign || 'OPERATIVE_' + nm.id.substring(0,4)}</option>`).join('')}
+                            ${nonMembers.map(nm => `<option value="${nm.id}">${nm.callsign || 'OPERATIVE_' + nm.id.substring(0, 4)}</option>`).join('')}
                         </select>
                     </div>
                 `;
@@ -1952,7 +2065,7 @@
 
             container.innerHTML = html;
             window.tempGroupData[groupId] = group.members || [];
-            
+
             const modalEl = document.getElementById('groupMembersModal');
             if (!modalEl.classList.contains('show')) {
                 new bootstrap.Modal(modalEl).show();
@@ -1985,6 +2098,8 @@
 
             document.getElementById('dossierCallsign').innerText = (data.callsign || 'OPERATIVE').toUpperCase();
             document.getElementById('dossierID').innerText = `UID: ${data.id.substring(0, 8).toUpperCase()}`;
+            document.getElementById('dossierName').innerText = (data.first_name && data.last_name) ? `${data.first_name} ${data.last_name}`.toUpperCase() : 'UNKNOWN';
+            document.getElementById('dossierContact').innerText = data.telephone || 'NOT LISTED';
             document.getElementById('dossierSchool').innerText = data.school || 'NOT ASSIGNED';
             document.getElementById('dossierMajor').innerText = data.major || 'NOT ASSIGNED';
             document.getElementById('dossierGrade').innerText = data.grade || 'GRADUATING';
@@ -1995,44 +2110,44 @@
             // Fetch active deployments
             const compsContainer = document.getElementById('dossierComps');
             compsContainer.innerHTML = '<div class="x-small text-muted py-1 flex-center"><div class="spinner-border spinner-border-sm" style="width: 8px; height: 8px;"></div> SCANNING...</div>';
-            
+
             const { data: bookings } = await supabase.from('intelligence_booking').select('team_name, hub_id').contains('member_ids', JSON.stringify([data.id]));
             const { data: groups } = await supabase.from('groups').select('title, project_name').contains('members', JSON.stringify([data.id]));
 
             let htmlString = '';
-            
+
             if (bookings && bookings.length > 0) {
                 const hubIds = [...new Set(bookings.map(b => b.hub_id))];
                 const { data: hubs } = await supabase.from('intelligence_hub').select('id, title, status, tags').in('id', hubIds);
-                
+
                 compsContainer.innerHTML = bookings.map(b => {
                     const hub = (hubs || []).find(h => h.id === b.hub_id);
                     if (!hub) return '';
                     const stColor = hub.status === 'ACTIVE' ? 'success' : (hub.status === 'COMPLETED' ? 'secondary' : 'dark');
                     return `
-                        <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1" style="border-left: 3px solid #000 !important;">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-black text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.5px;">${hub.title}</span>
-                                <span class="badge bg-${stColor} rounded-0 px-2" style="font-size: 0.4rem;">${hub.status}</span>
+                        <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1 hover-bg-light transition" style="border-left: 3px solid #000 !important; cursor: pointer;" onclick="document.querySelector('#dossierModal .btn-black')?.click(); showFeature('news'); setTimeout(() => { const el = document.getElementById('news-card-${hub.id}'); if(el){ el.scrollIntoView({behavior: 'smooth', block: 'center'}); setTimeout(() => {el.children[0].style.boxShadow = '0 0 15px rgba(255,193,7,0.5)'; setTimeout(() => el.children[0].style.boxShadow = '', 2000);}, 300); } }, 300);" title="GOTO WORK GRID">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="fw-black text-uppercase lh-sm text-decoration-underline" style="font-size: 0.65rem; letter-spacing: 0.5px;">PROJ: ${hub.title}</span>
+                                <span class="badge bg-${stColor} rounded-0 px-2 ms-2" style="font-size: 0.4rem;">${hub.status}</span>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted" style="font-size: 0.5rem;">TEAM: <span class="fw-bold">${b.team_name || 'UNNAMED'}</span></span>
-                                <span class="text-muted" style="font-size: 0.45rem;">REF_${hub.id.substring(0,4)}</span>
-                            </div>
+                            <span class="text-muted" style="font-size: 0.55rem; line-height: 1.2;">
+                                Working as <span class="fw-bold text-dark">${(b.team_name && b.team_name !== 'Main Roster') ? b.team_name : 'Operative'}</span>
+                            </span>
+                            <span class="text-muted text-uppercase text-end" style="font-size: 0.45rem;">REF_${hub.id.substring(0, 4)}</span>
                             ${(hub.tags && hub.tags.length > 0) ? `
                                 <div class="d-flex flex-wrap gap-1 mt-1">
-                                    ${hub.tags.slice(0,3).map(t => `<span class="badge bg-white border text-muted" style="font-size: 0.35rem;">${t.trim().toUpperCase()}</span>`).join('')}
+                                    ${hub.tags.slice(0, 3).map(t => `<span class="badge bg-white border text-muted" style="font-size: 0.35rem;">${t.trim().toUpperCase()}</span>`).join('')}
                                 </div>
                             ` : ''}
                         </div>
                     `;
                 }).join('');
             }
-            
+
             if (groups && groups.length > 0) {
                 htmlString += groups.map(g => `
-                    <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1" style="border-left: 3px solid #0d6efd !important;">
-                        <span class="fw-black text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.5px;">PROJ: ${g.title}</span>
+                    <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1 hover-bg-light transition" style="border-left: 3px solid #0d6efd !important; cursor: pointer;" onclick="document.querySelector('#dossierModal .btn-black')?.click(); showFeature('chat');" title="GOTO COMMS">
+                        <span class="fw-black text-uppercase text-decoration-underline" style="font-size: 0.6rem; letter-spacing: 0.5px;">PROJ: ${g.title}</span>
                         <span class="text-muted" style="font-size: 0.5rem;">${g.project_name || 'GENERAL COMMS'}</span>
                     </div>
                 `).join('');
@@ -2166,10 +2281,10 @@
             if (calendarEl && !calendar) {
                 calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
-                    headerToolbar: { 
-                        left: 'prevYear,prev,next,nextYear today', 
-                        center: 'title', 
-                        right: 'multiMonthYear,dayGridMonth,listMonth' 
+                    headerToolbar: {
+                        left: 'prevYear,prev,next,nextYear today',
+                        center: 'title',
+                        right: 'multiMonthYear,dayGridMonth,listMonth'
                     },
                     themeSystem: 'bootstrap5',
                     selectable: true,
@@ -2267,7 +2382,7 @@
                     events: async (info, successCallback, failureCallback) => {
                         const isTasksOnly = document.getElementById('viewTasksOnly')?.checked;
                         const isPersonalOnly = document.getElementById('scopePersonalMain')?.checked;
-                        
+
                         const { data, error } = await supabase.from('calendar_events').select('*');
                         if (error) successCallback([]);
                         else {
@@ -2322,6 +2437,7 @@
         document.getElementById('chatBtn')?.addEventListener('click', () => toggleFeature('chat'));
         document.getElementById('calendarBtn')?.addEventListener('click', () => toggleFeature('calendar'));
         document.getElementById('newsBtn')?.addEventListener('click', () => toggleFeature('news'));
+        document.getElementById('classBtn')?.addEventListener('click', () => toggleFeature('class'));
 
         const groupForm = document.getElementById('newGroupFormGeneral');
         if (groupForm) {
