@@ -1,47 +1,68 @@
-# Authentication Setup: Major Web
+# Major Web: Engineering Hub
 
-A sleek, professional, and minimalist **Black & White** authentication system. Built with **Bootstrap 5** and powered by **Supabase** for secure user management and profile data storage.
+A high-performance, industrial-grade tactical dashboard designed for **PSM Engineering Students**. Built with a minimalist **Black & White** aesthetic, focusing on functional efficiency, real-time communication, and academic synchronization.
 
-## Project Architecture
-- **Frontend**: HTML5, CSS3 (Vanilla), JavaScript (ES6+).
-- **Styling**: Bootstrap 5 + custom minimalist theme.
-- **Backend-as-a-Service**: [Supabase](https://supabase.com/) (Auth & Postgres).
+![Header Image](https://raw.githubusercontent.com/Ray0737/Authentication_Setup/main/pic/header_preview.png) *(Note: Placeholder for actual preview)*
 
-## Key Features
-- **Minimalist Aesthetic**: High-contrast black and white design with clean typography.
-- **Secure Login**: Session-based authentication with auto-redirection for protected routes.
-- **Two-Step Registration**:
-  1. **Account Creation**: Email and secure password setup.
-  2. **Detailed Profiling**: Collects First Name, Last Name, Nickname, Callsign, Telephone, and Birthdate.
-- **Proactive Security**: Real-time password requirement checklist (Uppercase, Number, Special Character, Min-8 Length).
-- **Protected Dashboard**: A secure `index.html` that displays authenticated user profile information.
+## 🛠️ Technological Stack
+- **Frontend**: HTML5, CSS3 (Custom Industrial Theme), JavaScript (ES6+).
+- **Styling**: Bootstrap 5 + Vanilla CSS Micro-animations.
+- **Backend-as-a-Service**: [Supabase](https://supabase.com/) (Real-time DB, Auth, Storage).
+- **Libraries**: FullCalendar 6 for tactical scheduling.
 
-## Quick Setup
+## 📡 Core Modules
 
-### 1. Database Configuration
-Execute the [supabase_setup.sql](./supabase_setup.sql) script in your Supabase SQL Editor. This will:
-- Create the `profiles` table.
-- Link it to the Supabase Auth system.
-- Enable **Row Level Security (RLS)** policies so users can only access their own data.
+### 1. **Intelligence Hub (Work_Grid)**
+The recruitment command unit. Allows users to post and track recruitment announcements for projects and competitions. 
+- Real-time data feed.
+- Categorized mission posts.
+- Direct integration with unit composition.
 
-> [!IMPORTANT]
-> **Disable Email Confirmation for Instant Registration:**
-> By default, Supabase requires users to confirm their email before they can write data to the `profiles` table. For clinical/development purposes:
-> 1. Go to your **Supabase Dashboard**.
-> 2. Navigate to **Authentication** -> **Settings**.
-> 3. Under **User Management**, toggle **"Confirm email"** to **OFF**.
-> 4. Click **Save** at the bottom.
+### 2. **Communication Hub (Freq_Sync)**
+The encrypted real-time chat module for project coordination.
+- **Project Groups**: Create and manage specialized mission units.
+- **Data Transmission**: Support for text and secure file/image uploads.
+- **Reply System**: Threaded communication for tactical clarity.
+- **Unit Management**: Dismiss or leave units with immediate state synchronization.
 
-### 2. Connect Your App
-Open [auth.js](./auth.js) and update your Supabase project credentials:
+### 3. **Tactical Calendar (Ops_Schedule)**
+Visual mission planning and deadline tracking.
+- **Dual Perspectives**: Toggle between Grid (FullCalendar) and streamlined Drop-down List views.
+- **Security Scopes**: Categorize entries as Personal (Private) or Global (Unit) visibility.
+- **High-Priority Tasks**: Integrated task management with visual urgency indicators.
+
+### 4. **Academy Module (Library_Access)**
+A centralized directory for academic resources.
+- Grade-specific (M.4 - M.6) Mathematics and Physics portals.
+- Specialized SAT prep (RW & Math) integration.
+
+### 5. **Profile Dossier (Operative_ID)**
+Advanced user management system.
+- **Multi-Section Profiling**: Identification (Callsigns), Personal Dossier, and Academic Affiliation.
+- **Real-time Sync**: Instant profile updates across all modules without page reloads.
+
+## 🚀 Deployment & Configuration
+
+### 1. Database Initialization
+Execute the following SQL scripts in your Supabase SQL Editor in the specified order:
+1. [supabase_setup.sql](./supabase_setup.sql) (Core schema)
+2. [supabase_update.sql](./supabase_update.sql) (Security policies)
+3. [new_features_setup.sql](./new_features_setup.sql) (Hub & Calendar)
+4. [chat_migration.sql](./chat_migration.sql) (Communication protocols)
+
+### 2. Environment Setup
+Link your instance by updating the credentials in `authen/auth.js`:
 ```javascript
 const SUPABASE_URL = 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 ```
 
-### 3. Deploy
-Simply host the files or open `login.html` locally to begin the authentication flow.
+### 3. Authentication Policy
+Ensure **Email Confirmation** is toggled **OFF** in your Supabase Authentication settings for instant operative registration during development.
 
-## License
-This project is for tactical and educational purposes. Feel free to modify and integrate into your existing web structures.
+## 👤 Developer Accreditation
+**Mr. Raphee Rattanamanoonporn (Ray)**
+*E-AI Major (Gen 07) @ Satit PSM*
 
+---
+*© 2026 Engineering_Roadmap. Encrypted Connection Established.*
