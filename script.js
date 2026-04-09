@@ -1,284 +1,553 @@
 import { supabase } from './authen/auth.js';
 
-        let currentProfile = null;
-        let selectedFile = null;
-        let calendar = null;
-        let countdownInterval = null;
-        let messageSubscription = null;
-        const profileCache = new Map();
+let currentProfile = null;
+let selectedFile = null;
+let calendar = null;
+let countdownInterval = null;
+let messageSubscription = null;
+const profileCache = new Map();
 
-        // Logout logic
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                    console.error('Logout error:', error.message);
-                } else {
-                    window.location.href = 'authen/login.html';
-                }
-            });
+// Logout logic
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Logout error:', error.message);
+        } else {
+            window.location.href = 'authen/login.html';
         }
+    });
+}
 
-        // Avatar preview
-        const avatarInput = document.getElementById('avatarInput');
-        const avatarPreview = document.getElementById('avatarPreview');
-        if (avatarInput) {
-            avatarInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    selectedFile = file;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        avatarPreview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
+// Avatar preview
+const avatarInput = document.getElementById('avatarInput');
+const avatarPreview = document.getElementById('avatarPreview');
+if (avatarInput) {
+    avatarInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                avatarPreview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            };
+            reader.readAsDataURL(file);
         }
+    });
+}
 
-        // Display user info
-        async function loadUserInfo() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+// Display user info
+async function loadUserInfo() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
-                const userType = document.getElementById('userType');
-                const miniCallsign = document.getElementById('mini-callsign');
-                const miniInfo = document.getElementById('mini-info');
-                const miniAvatar = document.getElementById('mini-avatar');
+        const userType = document.getElementById('userType');
+        const miniCallsign = document.getElementById('mini-callsign');
+        const miniInfo = document.getElementById('mini-info');
+        const miniAvatar = document.getElementById('mini-avatar');
 
-                if (profile) {
-                    currentProfile = profile;
-                    userType.textContent = (profile.major || profile.nickname || 'OPERATIVE').toUpperCase();
-                    miniCallsign.textContent = profile.callsign || 'OPERATIVE';
-                    miniInfo.textContent = `${profile.grade || 'M.?'}${profile.major ? ' | ' + profile.major : ''}`;
+        if (profile) {
+            currentProfile = profile;
+            userType.textContent = (profile.major || profile.nickname || 'OPERATIVE').toUpperCase();
+            miniCallsign.textContent = profile.callsign || 'OPERATIVE';
+            miniInfo.textContent = `${profile.grade || 'M.?'}${profile.major ? ' | ' + profile.major : ''}`;
 
-                    if (profile.avatar_url) {
-                        miniAvatar.innerHTML = `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
-                        avatarPreview.innerHTML = `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
-                    }
-
-                    // Pre-fill modal
-                    document.getElementById('edit-first-name').value = profile.first_name || '';
-                    document.getElementById('edit-last-name').value = profile.last_name || '';
-                    document.getElementById('edit-nickname').value = profile.nickname || '';
-                    document.getElementById('edit-callsign').value = profile.callsign || '';
-                    document.getElementById('edit-telephone').value = profile.telephone || '';
-                    document.getElementById('edit-school').value = profile.school || '';
-                    document.getElementById('edit-grade').value = profile.grade || '';
-                    document.getElementById('edit-major').value = profile.major || '';
-                    document.getElementById('edit-birthdate').value = profile.birthdate || '';
-
-                    // Start Countdown & Interests
-                    initAdmissionCountdown(profile.grade);
-                    selectedInterests = profile.faculties || [];
-                    renderInterestCatalog();
-                    initFacultyChips();
-                }
+            if (profile.avatar_url) {
+                miniAvatar.innerHTML = `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                avatarPreview.innerHTML = `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
             }
-        }
 
-        // --- COUNTDOWN LOGIC ---
-        function initAdmissionCountdown(grade) {
-            if (countdownInterval) clearInterval(countdownInterval);
-            const currentYear = new Date().getFullYear();
-            let targetYear = currentYear;
-            const gradeNum = parseInt(grade?.match(/\d+/)?.[0] || '6');
-            const yearsRemaining = 6 - gradeNum;
-            targetYear += yearsRemaining;
-            if (yearsRemaining === 0 && new Date().getMonth() >= 6) targetYear += 1;
-            const targetDate = new Date(`July 1, ${targetYear} 00:00:00`).getTime();
-            document.getElementById('targetYearLabel').textContent = `TARGET: ESTIMATED JULY ${targetYear}`;
-            function updateCountdown() {
-                const now = new Date().getTime();
-                const distance = targetDate - now;
-                if (distance < 0) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('admission-countdown').innerHTML = "<h3 class='text-success fw-bold'>ADMISSION PERIOD ACTIVE</h3>";
-                    return;
-                }
-                const years = Math.floor(distance / (1000 * 60 * 60 * 24 * 365));
-                const months = Math.floor((distance % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
-                const days = Math.floor((distance % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                document.getElementById('cd-years').innerText = String(years).padStart(2, '0');
-                document.getElementById('cd-months').innerText = String(months).padStart(2, '0');
-                document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
-                document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
-                document.getElementById('cd-mins').innerText = String(minutes).padStart(2, '0');
-                document.getElementById('cd-secs').innerText = String(seconds).padStart(2, '0');
-            }
-            countdownInterval = setInterval(updateCountdown, 1000);
-            updateCountdown();
-        }
+            // Pre-fill modal
+            document.getElementById('edit-first-name').value = profile.first_name || '';
+            document.getElementById('edit-last-name').value = profile.last_name || '';
+            document.getElementById('edit-nickname').value = profile.nickname || '';
+            document.getElementById('edit-callsign').value = profile.callsign || '';
+            document.getElementById('edit-telephone').value = profile.telephone || '';
+            document.getElementById('edit-school').value = profile.school || '';
+            document.getElementById('edit-grade').value = profile.grade || '';
+            document.getElementById('edit-major').value = profile.major || '';
+            document.getElementById('edit-birthdate').value = profile.birthdate || '';
 
-        // --- INTEREST CATALOG LOGIC ---
-        const facultyData = [
-            {
-                uni: "Chulalongkorn University (CU)", faculties: [
-                    { name: "ISE (Int. School of Engineering)", majors: ["AI / Robotics", "AERO", "ADME", "ICE", "NANO"] },
-                    { name: "Faculty of Engineering", majors: ["CEDT", "Computer Eng", "Mechanical Eng", "Electrical Eng"] },
-                    { name: "Faculty of Commerce & Accountancy", majors: ["BBA", "Marketing", "Finance"] },
-                    { name: "Faculty of Medicine", majors: ["MDCU"] },
-                    { name: "Faculty of Dentistry", majors: ["Dentistry"] },
-                    { name: "Faculty of Science", majors: ["Comp Sci", "BioTech"] }
-                ]
-            },
-            {
-                uni: "Thammasat University (TU)", faculties: [
-                    { name: "TEP/TEPE (Engineering)", majors: ["Civil Eng", "Auto Eng", "Cyber Sec"] },
-                    { name: "TDB (Business)", majors: ["BBA TU", "Accounting"] },
-                    { name: "Faculty of Law", majors: ["Law"] }
-                ]
-            },
-            {
-                uni: "Mahidol University", faculties: [
-                    { name: "Faculty of Medicine (Siriraj)", majors: ["Medicine"] },
-                    { name: "International College (MUIC)", majors: ["Computer Science", "Finance", "Comm Design"] }
-                ]
-            },
-            {
-                uni: "Kasetsart University (KU)", faculties: [
-                    { name: "Faculty of Engineering", majors: ["Aero Eng", "Mechanical Eng", "Soft En"] }
-                ]
-            },
-            {
-                uni: "Stanford University", faculties: [
-                    { name: "School of Engineering", majors: ["CS", "AI", "HCI"] },
-                    { name: "GSB (Business)", majors: ["MBA"] }
-                ]
-            },
-            {
-                uni: "MIT", faculties: [
-                    { name: "School of Engineering", majors: ["EECS", "MechE"] }
-                ]
-            }
-        ];
+            // Start Countdown & Interests
+            initAdmissionCountdown(profile.grade);
+            selectedInterests = profile.faculties || [];
+            
+            // Wait for Intel Sync before initial render
+            await syncMajorIntel();
 
-        let selectedInterests = [];
-
-        function renderInterestCatalog() {
-            const catalog = document.getElementById('facultyCatalog');
-            if (!catalog) return;
-            catalog.innerHTML = selectedInterests.map((item, idx) => `
-                <div class="interest-chip px-3 py-1 border border-dark rounded-pill d-flex align-items-center gap-2 bg-white shadow-sm" style="font-size: 0.55rem;">
-                    <span class="fw-bold">${item}</span>
-                    <i class="bi bi-x-circle-fill text-danger" style="cursor:pointer; font-size: 0.65rem;" onclick="removeInterest(${idx})"></i>
-                </div>
-            `).join('');
-            saveInterests();
-        }
-
-        async function saveInterests() {
-            if (!currentProfile || !selectedInterests) return;
-            const { error } = await supabase.from('profiles').update({ faculties: selectedInterests }).eq('id', currentProfile.id);
-            if (error) console.error('Sync Error:', error.message);
-        }
-
-        window.removeInterest = (idx) => {
-            selectedInterests.splice(idx, 1);
             renderInterestCatalog();
+            initFacultyChips();
+            renderMainUniversityFaculties();
+
+            // Subscribe to REAL-TIME Profile Changes
+            subscribeToProfileInterests();
+        }
+    }
+}
+
+/**
+ * STRATEGIC_SYNC: Listen for live dossier updates
+ * Ensures that the Mission Control Ribbon is synced across all operative tabs.
+ */
+function subscribeToProfileInterests() {
+    if (!currentProfile) return;
+
+    supabase
+        .channel('public:profiles')
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles', 
+            filter: `id=eq.${currentProfile.id}` 
+        }, payload => {
+            console.log("DOSSIER_UPDATE: SYNCING_INTERESTS...");
+            selectedInterests = payload.new.faculties || [];
+            renderInterestCatalog();
+            renderMainUniversityFaculties();
+        })
+        .subscribe();
+}
+
+// --- COUNTDOWN LOGIC ---
+function initAdmissionCountdown(grade) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    const currentYear = new Date().getFullYear();
+    let targetYear = currentYear;
+    const gradeNum = parseInt(grade?.match(/\d+/)?.[0] || '6');
+    const yearsRemaining = 6 - gradeNum;
+    targetYear += yearsRemaining;
+    if (yearsRemaining === 0 && new Date().getMonth() >= 6) targetYear += 1;
+    const targetDate = new Date(`July 1, ${targetYear} 00:00:00`).getTime();
+    document.getElementById('targetYearLabel').textContent = `TARGET: ESTIMATED JULY ${targetYear}`;
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+        if (distance < 0) {
+            clearInterval(countdownInterval);
+            document.getElementById('admission-countdown').innerHTML = "<h3 class='text-success fw-bold'>ADMISSION PERIOD ACTIVE</h3>";
+            return;
+        }
+        const years = Math.floor(distance / (1000 * 60 * 60 * 24 * 365));
+        const months = Math.floor((distance % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+        const days = Math.floor((distance % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        document.getElementById('cd-years').innerText = String(years).padStart(2, '0');
+        document.getElementById('cd-months').innerText = String(months).padStart(2, '0');
+        document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+        document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+        document.getElementById('cd-mins').innerText = String(minutes).padStart(2, '0');
+        document.getElementById('cd-secs').innerText = String(seconds).padStart(2, '0');
+    }
+    countdownInterval = setInterval(updateCountdown, 1000);
+    updateCountdown();
+}
+
+// --- INTEREST CATALOG LOGIC ---
+// --- DATABASE SYNCED INTEL ---
+let facultyData = [];
+let intelStore = {}; // Now populated from DB
+
+/**
+ * MISSION_INTEL FETCH PROTOCOL
+ * Syncs the local hierarchy with the Supabase major_intel cloud nodes.
+ */
+async function syncMajorIntel() {
+    console.log("SYNCING_INTEL: STARTING_DEPLOYMENT...");
+    const { data, error } = await supabase.from('major_intel').select('*');
+    if (error) {
+        console.error("SYNC_FAILURE:", error.message);
+        return;
+    }
+
+    // 1. Reset and Rebuild Hierarchy for Grid
+    const uniMap = {};
+    const localStore = {};
+
+    data.forEach(item => {
+        // Build Intel Store Object
+        localStore[item.major_name] = {
+            insights: item.insights,
+            quota: item.quota,
+            engProf: item.eng_prof,
+            gpax: item.gpax,
+            tuition: item.tuition,
+            location: item.location,
+            outlook: item.outlook,
+            submit: item.submit_requirements || [],
+            scores: item.scores || [],
+            port: item.port_specs
         };
 
-        window.addInterest = (val) => {
-            if (!selectedInterests.includes(val)) {
-                selectedInterests.push(val);
-                renderInterestCatalog();
-            }
-            const searchInput = document.getElementById('facultySearchInput');
-            const suggestionsBox = document.getElementById('facultySuggestions');
-            if (searchInput) searchInput.value = '';
-            if (suggestionsBox) suggestionsBox.style.display = 'none';
-        };
+        // Build Faculty Data Hierarchy
+        const uniKey = `${item.uni_full} (${item.uni_short})`;
+        if (!uniMap[uniKey]) {
+            uniMap[uniKey] = { uni: uniKey, faculties: {} };
+        }
 
-        function initFacultyChips() {
-            const searchInput = document.getElementById('facultySearchInput');
-            const suggestionsBox = document.getElementById('facultySuggestions');
-            if (!searchInput) return;
+        if (!uniMap[uniKey].faculties[item.faculty_name]) {
+            uniMap[uniKey].faculties[item.faculty_name] = {
+                name: item.faculty_name,
+                short: item.faculty_short,
+                tags: item.tags,
+                icon: item.icon,
+                majors: []
+            };
+        }
+        
+        uniMap[uniKey].faculties[item.faculty_name].majors.push(item.major_name);
+    });
 
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase().trim();
-                if (!query || query.length < 1) {
-                    suggestionsBox.style.display = 'none';
-                    return;
+    // Convert Map to targeted array format
+    facultyData = Object.values(uniMap).map(u => ({
+        uni: u.uni,
+        faculties: Object.values(u.faculties)
+    }));
+
+    intelStore = localStore;
+    console.log(`SYNCING_INTEL: ${data.length} NODES_ACTIVE`);
+}
+
+let selectedInterests = [];
+
+function renderInterestCatalog() {
+    const catalog = document.getElementById('facultyCatalog');
+    if (!catalog) return;
+    
+    if (selectedInterests.length === 0) {
+        catalog.innerHTML = `<div class="text-center w-100 py-1 text-muted x-small fw-bold opacity-25" style="letter-spacing: 2px;">[ NO_ACTIVE_DEPLOYMENTS ]</div>`;
+        return;
+    }
+
+    catalog.innerHTML = selectedInterests.map((item, idx) => {
+        const parts = item.split(' > ');
+        const uni = parts[0];
+        const major = parts.pop();
+        return `
+        <div class="unit-brick d-flex align-items-center border border-dark bg-white overflow-hidden shadow-sm transition" 
+             style="height: 32px; min-width: 140px;">
+            <div class="bg-dark text-white h-100 d-flex align-items-center px-2 fw-black" style="font-size: 0.5rem; letter-spacing: 0.5px;">
+                ${uni}
+            </div>
+            <div class="flex-grow-1 px-2 fw-bold text-truncate" style="font-size: 0.55rem; letter-spacing: 0.2px;">
+                ${major.toUpperCase()}
+            </div>
+            <div class="h-100 border-start border-dark px-2 d-flex align-items-center cursor-pointer hover-bg-danger transition remove-brick" onclick="removeInterest(${idx})">
+                <i class="bi bi-x text-dark" style="font-size: 0.8rem;"></i>
+            </div>
+        </div>
+        `;
+    }).join('');
+    saveInterests();
+}
+
+async function saveInterests() {
+    if (!currentProfile || !selectedInterests) return;
+    const { error } = await supabase.from('profiles').update({ faculties: selectedInterests }).eq('id', currentProfile.id);
+    if (error) console.error('Sync Error:', error.message);
+}
+
+window.removeInterest = (idx) => {
+    selectedInterests.splice(idx, 1);
+    renderInterestCatalog();
+    renderMainUniversityFaculties();
+};
+
+window.toggleInterest = (val) => {
+    const idx = selectedInterests.indexOf(val);
+    if (idx === -1) {
+        selectedInterests.push(val);
+    } else {
+        selectedInterests.splice(idx, 1);
+    }
+    renderInterestCatalog();
+    renderMainUniversityFaculties();
+
+    const searchInput = document.getElementById('facultySearchInput');
+    const suggestionsBox = document.getElementById('facultySuggestions');
+    if (searchInput) searchInput.value = '';
+    if (suggestionsBox) suggestionsBox.style.display = 'none';
+};
+
+window.addInterest = (val) => {
+    if (!selectedInterests.includes(val)) {
+        selectedInterests.push(val);
+        renderInterestCatalog();
+        renderMainUniversityFaculties();
+    }
+    const searchInput = document.getElementById('facultySearchInput');
+    const suggestionsBox = document.getElementById('facultySuggestions');
+    if (searchInput) searchInput.value = '';
+    if (suggestionsBox) suggestionsBox.style.display = 'none';
+};
+
+function initFacultyChips() {
+    const searchInput = document.getElementById('facultySearchInput');
+    const suggestionsBox = document.getElementById('facultySuggestions');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query || query.length < 1) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        let matches = [];
+        facultyData.forEach(u => {
+            const uniShort = u.uni.split('(')[1]?.replace(')', '') || u.uni;
+            u.faculties.forEach(f => {
+                const facName = f.name;
+                const facShort = f.short || '';
+                // Match Uni or Faculty or Short Name
+                if (u.uni.toLowerCase().includes(query) ||
+                    facName.toLowerCase().includes(query) ||
+                    facShort.toLowerCase().includes(query)) {
+                    matches.push(`${uniShort} > ${facName}${facShort ? ' (' + facShort + ')' : ''}`);
                 }
-
-                let matches = [];
-                facultyData.forEach(u => {
-                    const uniShort = u.uni.split('(')[1]?.replace(')', '') || u.uni;
-                    u.faculties.forEach(f => {
-                        const facName = f.name;
-                        // Match Uni or Faculty
-                        if (u.uni.toLowerCase().includes(query) || facName.toLowerCase().includes(query)) {
-                            matches.push(`${uniShort} > ${facName}`);
-                        }
-                        // Match Majors
-                        f.majors.forEach(m => {
-                            if (m.toLowerCase().includes(query)) {
-                                matches.push(`${uniShort} > ${facName} > ${m}`);
-                            }
-                        });
-                    });
+                // Match Majors
+                f.majors.forEach(m => {
+                    if (m.toLowerCase().includes(query)) {
+                        matches.push(`${uniShort} > ${facName} > ${m}`);
+                    }
                 });
+            });
+        });
 
-                const uniqueMatches = [...new Set(matches)].slice(0, 10);
-                if (uniqueMatches.length > 0) {
-                    suggestionsBox.innerHTML = uniqueMatches.map(m => `
-                        <div class="dropdown-item py-2 border-bottom x-small tracking-wider fw-bold" style="cursor:pointer; font-size: 0.6rem;" onclick="addInterest('${m}')">
+        const uniqueMatches = [...new Set(matches)].slice(0, 10);
+        if (uniqueMatches.length > 0) {
+            suggestionsBox.innerHTML = uniqueMatches.map(m => `
+                        <div class="dropdown-item py-2 border-bottom x-small tracking-wider fw-bold" style="cursor:pointer; font-size: 0.6rem;" onclick="toggleInterest('${m}')">
                             ${m}
                         </div>
                     `).join('');
-                    suggestionsBox.style.display = 'block';
-                } else {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (searchInput && !searchInput.contains(e.target) && suggestionsBox && !suggestionsBox.contains(e.target)) {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
+            suggestionsBox.style.display = 'block';
+        } else {
+            suggestionsBox.style.display = 'none';
         }
+    });
 
-        // --- RECRUITMENT / WORK GRID MODULE ---
-        let newsInitialized = false;
-        async function initNewsModule() {
-            const container = document.getElementById('newsContainer');
-            const { data: news, error } = await supabase.from('intelligence_hub').select('*').order('created_at', { ascending: false });
+    document.addEventListener('click', (e) => {
+        if (searchInput && !searchInput.contains(e.target) && suggestionsBox && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.style.display = 'none';
+        }
+    });
+}
 
-            if (error || !news || news.length === 0) {
-                container.innerHTML = `<div class="col-12 p-5 text-center text-muted x-small fw-bold">NO ACTIVE RECRUITMENT ADS AVAILABLE.</div>`;
+// --- SEARCH FILTERS LOGIC ---
+let activeFilters = [];
+window.toggleSearchFilter = (filter) => {
+    const index = activeFilters.indexOf(filter);
+    if (index === -1) {
+        activeFilters.push(filter);
+    } else {
+        activeFilters.splice(index, 1);
+    }
+
+    // Update UI
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+        const btnFilter = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+        if (activeFilters.includes(btnFilter)) {
+            btn.classList.add('active', 'btn-dark');
+            btn.classList.remove('btn-outline-dark');
+        } else {
+            btn.classList.remove('active', 'btn-dark');
+            btn.classList.add('btn-outline-dark');
+        }
+    });
+
+    renderMainUniversityFaculties();
+};
+
+function renderMainUniversityFaculties() {
+    const container = document.getElementById('all-uni-grids');
+    if (!container) return;
+
+    let htmlContent = '';
+
+    facultyData.forEach(u => {
+        const uniShort = u.uni.split('(')[1]?.replace(')', '') || u.uni;
+
+        // Collect all major-specific cards for this university that match active filters
+        let majorCardsHtml = '';
+
+        u.faculties.forEach(f => {
+            // Check if faculty matches search filters
+            if (activeFilters.length > 0 && !(f.tags && f.tags.some(tag => activeFilters.includes(tag)))) {
                 return;
             }
 
-            const { data: allBookings } = await supabase.from('intelligence_booking').select('*');
-            const { data: allGroups } = await supabase.from('groups').select('linked_hub_id, title');
-            const { data: allProfiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
-            const profileMap = {};
-            (allProfiles || []).forEach(p => { profileMap[p.id] = p; });
+            const baseFullName = `${uniShort} > ${f.name}${f.short ? ' (' + f.short + ')' : ''}`;
 
-            container.innerHTML = news.map(c => {
-                const hubsBookings = (allBookings || []).filter(b => b.hub_id === c.id);
-                const statusColor = c.status === 'ACTIVE' ? 'success' : (c.status === 'FULL' ? 'warning' : (c.status === 'COMPLETED' ? 'secondary' : 'dark'));
-                const linkedGroup = (allGroups || []).find(g => g.linked_hub_id === c.id);
+            // If no majors listed, show one card for the faculty
+            const majorsToShow = (f.majors && f.majors.length > 0) ? f.majors : [null];
 
-                // Resolve all unique member IDs across all bookings for this hub
-                const allMemberIds = [...new Set(hubsBookings.flatMap(b => b.member_ids || []))];
-                const members = allMemberIds.map(mid => profileMap[mid]).filter(Boolean);
+            majorsToShow.forEach(m => {
+                const fullName = m ? `${baseFullName} > ${m}` : baseFullName;
+                const isSelected = selectedInterests.includes(fullName);
+                const displayMajor = m || f.name.replace('Faculty of ', '').replace('College of ', '');
 
-                // Creator info
-                const creator = profileMap[c.created_by];
-                const creatorName = creator ? (creator.callsign || 'OPERATIVE') : 'UNKNOWN';
+                majorCardsHtml += `
+                        <div class="col">
+                            <div class="faculty-card p-3 border border-dark text-center h-100 transition d-flex flex-column ${isSelected ? 'bg-dark text-white shadow-sm' : 'bg-white'}"
+                                 style="min-height: 150px; border-width: 1.5px !important;">
+                                <i class="bi ${f.icon || 'bi-layers'} mb-2 d-inline-block" style="font-size: 1.1rem;"></i>
+                                <div class="m-0 fw-black text-uppercase flex-grow-1 d-flex flex-column justify-content-center" style="font-size: 0.5rem; letter-spacing: 0.5px; line-height: 1.2;">
+                                    <span class="d-block ${isSelected ? 'text-warning' : 'text-primary'}" style="font-size: 0.6rem; ${!isSelected ? 'color: #ffc107 !important;' : ''}">${f.short || uniShort}</span>
+                                    <span class="mt-1">${displayMajor.toUpperCase()}</span>
+                                </div>
+                                
+                                <div class="mt-3 d-flex flex-column gap-1">
+                                    <button class="btn btn-xs deploy-btn fw-black w-100 py-1" 
+                                            onclick="toggleInterest('${fullName}')"
+                                            style="font-size: 0.45rem; letter-spacing: 1px;">
+                                        ${isSelected ? 'DISMISS' : 'DEPLOY'}
+                                    </button>
+                                    <button class="btn btn-xs btn-outline-dark fw-black w-100 py-1" 
+                                            onclick="showMajorDetails('${displayMajor}', '${f.short || uniShort}', '${fullName}')"
+                                            style="font-size: 0.45rem; letter-spacing: 1px; border-width: 1px !important;">
+                                        DETAILS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+            });
+        });
 
-                return `
+        if (!majorCardsHtml) return; // Skip uni if no matches
+
+        htmlContent += `
+                <div class="uni-grid-section mb-5">
+                    <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
+                        <div class="border-bottom flex-grow-1 opacity-25"></div>
+                        <p class="x-small tracking-multi fw-black text-muted m-0 text-uppercase"
+                            style="font-size: 0.5rem; letter-spacing: 2px;">TARGET_HUB // ${u.uni.toUpperCase()}</p>
+                        <div class="border-bottom flex-grow-1 opacity-25"></div>
+                    </div>
+                    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-3 row-cols-xl-4 g-3">
+                        ${majorCardsHtml}
+                    </div>
+                </div>
+                `;
+    });
+
+    container.innerHTML = htmlContent || `<div class="text-center p-5 text-muted x-small fw-bold">NO MATCHING TARGET ENTITIES FOUND FOR SELECTED FILTERS.</div>`;
+}
+
+window.showMajorDetails = (major, faculty, fullName) => {
+    const modal = new bootstrap.Modal(document.getElementById('majorDetailModal'));
+    document.getElementById('modalMajorTitle').innerText = `${fullName.split(' > ')[0]} // ${major.toUpperCase()}`;
+
+    const isISE = fullName.includes("ISE") || fullName.includes("(INTER)") || fullName.includes("BBA") || fullName.includes("AERO");
+
+    const data = intelStore[major] || (isISE ? {
+        insights: `Strategic International track in ${major}. Global-standard technical deployment and intercept proficiency.`,
+        quota: "110 SEATS (EST)",
+        engProf: "IELTS 7.0+ / DUOLINGO 120+",
+        gpax: "3.25+ RECOM",
+        tuition: "125,000 THB / SEM",
+        location: "VARIOUS_CAMPUS",
+        outlook: "INTERNATIONAL ENGINEER, TECHNICAL LEAD",
+        submit: ["E-PORTFOLIO", "IELTS", "SAT_MATH", "CU-ATS/AAT"],
+        scores: [
+            { label: "SAT MATH (DIGITAL)", value: "700 MIN" },
+            { label: "CU-ATS (PHY/CHM)", value: "800 PT" },
+            { label: "IELTS_TOTAL", value: "7.0 CORE" }
+        ],
+        port: "Demonstrate international outlook and high-level structural logic."
+    } : {
+        insights: `Specialized track focused on ${major}. Vital node in the ${faculty} industrial chain.`,
+        quota: "35-50 SEATS",
+        engProf: "IELTS 5.0+ / THAI_STD",
+        gpax: "2.75 - 3.00+",
+        tuition: "45,000 - 65,000 THB",
+        location: "PRIMARY_DOMAIN",
+        outlook: "GENERAL FIELD SPECIALIST",
+        submit: ["TRANSCRIPT", "FORM_A", "TGAT/TPAT"],
+        scores: [
+            { label: "TGAT_TOTAL", value: "30%" },
+            { label: "TPAT_CORE", value: "30%" },
+            { label: "A-LEVEL_SUB", value: "40%" }
+        ],
+        port: "Academic focus summary and evidence of interest in the track."
+    });
+
+    // Injection
+    document.getElementById('modalInsights').innerText = data.insights;
+    document.getElementById('modalQuota').innerText = data.quota;
+    document.getElementById('modalEngProf').innerText = data.engProf;
+    document.getElementById('modalGPAX').innerText = data.gpax;
+    document.getElementById('modalPort').innerText = data.port;
+
+    // New Fields Injection
+    if (document.getElementById('modalTuition')) document.getElementById('modalTuition').innerText = data.tuition;
+    if (document.getElementById('modalLocation')) document.getElementById('modalLocation').innerText = data.location;
+    if (document.getElementById('modalOutlook')) document.getElementById('modalOutlook').innerText = data.outlook;
+
+    const submitContainer = document.getElementById('modalSubmit');
+    submitContainer.innerHTML = data.submit.map(s => `
+                <span class="x-small fw-bold text-dark underline me-2" style="font-size: 0.45rem; letter-spacing: 0.5px; opacity: 0.8;">#${s}</span>
+            `).join('');
+
+    const scoreContainer = document.getElementById('modalScoresContainer');
+    scoreContainer.innerHTML = data.scores.map(s => `
+                <div class="x-small py-1" style="font-size: 0.65rem;"><span class="fw-bold" style="font-size: 0.55rem; opacity: 0.7;">${s.label}:</span> <span class="fw-black text-dark">${s.value}</span></div>
+            `).join('');
+
+    modal.show();
+};
+
+window.handleDeployClick = (selectId, baseName) => {
+    const select = document.getElementById(`select-${selectId}`);
+    if (!select) return;
+
+    const targetVal = select.value;
+    toggleInterest(targetVal);
+};
+
+window.handleCardClick = (event, baseName) => {
+    // No longer used for main toggle, button handles it
+};
+
+// --- RECRUITMENT / WORK GRID MODULE ---
+let newsInitialized = false;
+async function initNewsModule() {
+    const container = document.getElementById('newsContainer');
+    const { data: news, error } = await supabase.from('intelligence_hub').select('*').order('created_at', { ascending: false });
+
+    if (error || !news || news.length === 0) {
+        container.innerHTML = `<div class="col-12 p-5 text-center text-muted x-small fw-bold">NO ACTIVE RECRUITMENT ADS AVAILABLE.</div>`;
+        return;
+    }
+
+    const { data: allBookings } = await supabase.from('intelligence_booking').select('*');
+    const { data: allGroups } = await supabase.from('groups').select('linked_hub_id, title');
+    const { data: allProfiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
+    const profileMap = {};
+    (allProfiles || []).forEach(p => { profileMap[p.id] = p; });
+
+    container.innerHTML = news.map(c => {
+        const hubsBookings = (allBookings || []).filter(b => b.hub_id === c.id);
+        const statusColor = c.status === 'ACTIVE' ? 'success' : (c.status === 'FULL' ? 'warning' : (c.status === 'COMPLETED' ? 'secondary' : 'dark'));
+        const linkedGroup = (allGroups || []).find(g => g.linked_hub_id === c.id);
+
+        // Resolve all unique member IDs across all bookings for this hub
+        const allMemberIds = [...new Set(hubsBookings.flatMap(b => b.member_ids || []))];
+        const members = allMemberIds.map(mid => profileMap[mid]).filter(Boolean);
+
+        // Creator info
+        const creator = profileMap[c.created_by];
+        const creatorName = creator ? (creator.callsign || 'OPERATIVE') : 'UNKNOWN';
+
+        return `
                 <div class="col" id="news-card-${c.id}">
                     <div class="tactical-card h-100 d-flex flex-column bg-white shadow-sm" style="border: 1px solid #ddd; transition: all 0.3s ease;">
                         <div class="p-4 flex-grow-1">
@@ -348,53 +617,53 @@ import { supabase } from './authen/auth.js';
                     </div>
                 </div>
             `;
-            }).join('');
-        }
+    }).join('');
+}
 
-        window.createChatFromHub = async (hubId, hubTitle) => {
-            const { data: bookings } = await supabase.from('intelligence_booking').select('member_ids').eq('hub_id', hubId);
-            let memberIds = [...new Set((bookings || []).flatMap(b => b.member_ids || []))];
-            if (!memberIds.includes(currentProfile.id)) memberIds.push(currentProfile.id);
+window.createChatFromHub = async (hubId, hubTitle) => {
+    const { data: bookings } = await supabase.from('intelligence_booking').select('member_ids').eq('hub_id', hubId);
+    let memberIds = [...new Set((bookings || []).flatMap(b => b.member_ids || []))];
+    if (!memberIds.includes(currentProfile.id)) memberIds.push(currentProfile.id);
 
-            const { error } = await supabase.from('groups').insert([{
-                title: hubTitle,
-                project_name: 'Recruitment Team',
-                linked_hub_id: hubId,
-                members: memberIds,
-                created_by: currentProfile.id
-            }]);
+    const { error } = await supabase.from('groups').insert([{
+        title: hubTitle,
+        project_name: 'Recruitment Team',
+        linked_hub_id: hubId,
+        members: memberIds,
+        created_by: currentProfile.id
+    }]);
 
-            if (!error) {
-                tacticalNotify('TEAM CHAT INITIATED');
-                initNewsModule();
-                if (chatInitialized) loadGroups();
-            } else {
-                tacticalNotify('ERROR: ' + error.message);
-                console.error(error);
-            }
-        };
+    if (!error) {
+        tacticalNotify('TEAM CHAT INITIATED');
+        initNewsModule();
+        if (chatInitialized) loadGroups();
+    } else {
+        tacticalNotify('ERROR: ' + error.message);
+        console.error(error);
+    }
+};
 
-        window.manageHubRoster = async (hubId, title) => {
-            document.getElementById('enlist-mode').value = 'manage';
-            document.getElementById('enlist-hub-id').value = hubId;
-            document.getElementById('enlistTeamNameWrap').classList.add('d-none'); // Hide for owner manage mode
-            
-            // Get existing team name if possible
-            const { data: existing } = await supabase.from('intelligence_booking').select('team_name').eq('hub_id', hubId).limit(1).single();
-            document.getElementById('enlist-team-name').value = existing ? existing.team_name : 'PRIMARY_UNIT';
-            
-            document.getElementById('enlistModalTitle').innerText = `ROSTER_MGMT // ${title.toUpperCase()}`;
+window.manageHubRoster = async (hubId, title) => {
+    document.getElementById('enlist-mode').value = 'manage';
+    document.getElementById('enlist-hub-id').value = hubId;
+    document.getElementById('enlistTeamNameWrap').classList.add('d-none'); // Hide for owner manage mode
 
-            const memberListDiv = document.getElementById('enlist-member-list');
-            memberListDiv.innerHTML = '<div class="text-center p-3 text-muted x-small">QUERYING_PERSONNEL...</div>';
-            new bootstrap.Modal(document.getElementById('enlistModal')).show();
+    // Get existing team name if possible
+    const { data: existing } = await supabase.from('intelligence_booking').select('team_name').eq('hub_id', hubId).limit(1).single();
+    document.getElementById('enlist-team-name').value = existing ? existing.team_name : 'PRIMARY_UNIT';
 
-            const { data: bookings } = await supabase.from('intelligence_booking').select('member_ids').eq('hub_id', hubId);
-            const allMemberIds = [...new Set((bookings || []).flatMap(b => b.member_ids || []))];
+    document.getElementById('enlistModalTitle').innerText = `ROSTER_MGMT // ${title.toUpperCase()}`;
 
-            const { data: profiles } = await supabase.from('profiles').select('id, callsign');
-            if (profiles) {
-                memberListDiv.innerHTML = profiles.map(p => `
+    const memberListDiv = document.getElementById('enlist-member-list');
+    memberListDiv.innerHTML = '<div class="text-center p-3 text-muted x-small">QUERYING_PERSONNEL...</div>';
+    new bootstrap.Modal(document.getElementById('enlistModal')).show();
+
+    const { data: bookings } = await supabase.from('intelligence_booking').select('member_ids').eq('hub_id', hubId);
+    const allMemberIds = [...new Set((bookings || []).flatMap(b => b.member_ids || []))];
+
+    const { data: profiles } = await supabase.from('profiles').select('id, callsign');
+    if (profiles) {
+        memberListDiv.innerHTML = profiles.map(p => `
                     <div class="form-check p-2 border-bottom border-secondary-subtle hover-bg-light transition">
                         <input class="form-check-input ms-0 me-3" type="checkbox" value="${p.id}" id="chk-${p.id}" name="enlistMembers" ${allMemberIds.includes(p.id) ? 'checked' : ''}>
                         <label class="form-check-label x-small fw-bold text-uppercase" for="chk-${p.id}" style="cursor:pointer; font-size: 0.7rem;">
@@ -402,353 +671,353 @@ import { supabase } from './authen/auth.js';
                         </label>
                     </div>
                 `).join('');
+    }
+};
+
+
+window.joinHubOperation = async (hubId) => {
+    if (!currentProfile) {
+        tacticalNotify('ERR: AUTH_REQUIRED');
+        return;
+    }
+
+    // 1. Check if already in ANY team for this hub
+    const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', hubId);
+    const alreadyJoined = (bookings || []).some(b => (b.member_ids || []).includes(currentProfile.id));
+    if (alreadyJoined) {
+        tacticalNotify('NOTICE: ALREADY ENLISTED');
+        return;
+    }
+
+    // 2. Join logical team
+    let joinError = null;
+
+    // Prioritize joining the Lead's team (UNIT_LEAD) or the first available team
+    const leadTeam = (bookings || []).find(b => b.slot_code === 'UNIT_LEAD');
+    const targetTeam = leadTeam || (bookings && bookings.length > 0 ? bookings[0] : null);
+
+    if (targetTeam) {
+        const newIds = [...(targetTeam.member_ids || []), currentProfile.id];
+        const { error } = await supabase.from('intelligence_booking').update({ member_ids: newIds }).eq('id', targetTeam.id);
+        joinError = error;
+    } else {
+        // If NO bookings exist at all, create a new one using the Operative's name or a prompt
+        // But since they asked for "just click join", we'll use a prompt here as a fallback for missing teams
+        const customName = prompt("IDENTIFY YOUR UNIT / TEAM NAME:", "ALPHA_UNIT");
+        if (!customName) return; // Cancelled
+
+        const { error } = await supabase.from('intelligence_booking').insert([{
+            hub_id: hubId,
+            team_name: customName,
+            member_ids: [currentProfile.id],
+            slot_code: 'UNIT_MAIN'
+        }]);
+        joinError = error;
+    }
+
+    if (joinError) {
+        tacticalNotify('JOIN_ERROR: ' + joinError.message);
+        return;
+    }
+
+    // 3. Sync with linked group (Auto-Chat Join)
+    const { data: groups } = await supabase.from('groups').select('id, members').eq('linked_hub_id', hubId);
+    if (groups && groups.length > 0) {
+        for (const g of groups) {
+            if (!(g.members || []).includes(currentProfile.id)) {
+                const newGMembers = [...(g.members || []), currentProfile.id];
+                await supabase.from('groups').update({ members: newGMembers }).eq('id', g.id);
             }
-        };
+        }
+    }
 
+    initNewsModule();
+    tacticalNotify('ENLISTMENT_SUCCESS');
+};
 
-        window.joinHubOperation = async (hubId) => {
-            if (!currentProfile) {
-                tacticalNotify('ERR: AUTH_REQUIRED');
+const enlistForm = document.getElementById('enlistForm');
+if (enlistForm) {
+    enlistForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const mode = document.getElementById('enlist-mode').value;
+        const hubId = document.getElementById('enlist-hub-id').value;
+        const teamName = document.getElementById('enlist-team-name').value;
+        const checkboxes = document.querySelectorAll('input[name="enlistMembers"]:checked');
+        const memberIds = Array.from(checkboxes).map(c => c.value);
+
+        if (mode === 'request') {
+            if (memberIds.length === 0) {
+                tacticalNotify('ERROR: NO PERSONNEL SELECTED');
                 return;
             }
-
-            // 1. Check if already in ANY team for this hub
-            const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', hubId);
-            const alreadyJoined = (bookings || []).some(b => (b.member_ids || []).includes(currentProfile.id));
-            if (alreadyJoined) {
-                tacticalNotify('NOTICE: ALREADY ENLISTED');
-                return;
-            }
-
-            // 2. Join logical team
-            let joinError = null;
-            
-            // Prioritize joining the Lead's team (UNIT_LEAD) or the first available team
-            const leadTeam = (bookings || []).find(b => b.slot_code === 'UNIT_LEAD');
-            const targetTeam = leadTeam || (bookings && bookings.length > 0 ? bookings[0] : null);
-
-            if (targetTeam) {
-                const newIds = [...(targetTeam.member_ids || []), currentProfile.id];
-                const { error } = await supabase.from('intelligence_booking').update({ member_ids: newIds }).eq('id', targetTeam.id);
-                joinError = error;
+            const { error } = await supabase.from('intelligence_booking').insert([{
+                hub_id: hubId,
+                team_name: teamName,
+                member_ids: memberIds,
+                slot_code: 'UNIT_' + (Math.random().toString(36).substring(2, 5).toUpperCase())
+            }]);
+            if (!error) {
+                bootstrap.Modal.getInstance(document.getElementById('enlistModal')).hide();
+                initNewsModule();
+                tacticalNotify('UNIT DEPLOYMENT SUCCESSFUL');
             } else {
-                // If NO bookings exist at all, create a new one using the Operative's name or a prompt
-                // But since they asked for "just click join", we'll use a prompt here as a fallback for missing teams
-                const customName = prompt("IDENTIFY YOUR UNIT / TEAM NAME:", "ALPHA_UNIT");
-                if (!customName) return; // Cancelled
-
-                const { error } = await supabase.from('intelligence_booking').insert([{
+                alert('DEPLOYMENT FAILED: ' + error.message);
+            }
+        } else {
+            // Manage mode
+            await supabase.from('intelligence_booking').delete().eq('hub_id', hubId);
+            if (memberIds.length > 0) {
+                await supabase.from('intelligence_booking').insert([{
                     hub_id: hubId,
-                    team_name: customName,
-                    member_ids: [currentProfile.id],
+                    team_name: teamName || 'PRIMARY_UNIT',
+                    member_ids: memberIds,
                     slot_code: 'UNIT_MAIN'
                 }]);
-                joinError = error;
             }
+            bootstrap.Modal.getInstance(document.getElementById('enlistModal')).hide();
+            initNewsModule();
+            tacticalNotify('ROSTER UPDATED');
+        }
+    };
+}
 
-            if (joinError) {
-                tacticalNotify('JOIN_ERROR: ' + joinError.message);
-                return;
-            }
+window.openLinkedChat = async (hubId, teamName) => {
+    const { data, error } = await supabase.from('groups').select('*').eq('linked_hub_id', hubId).eq('title', teamName).single();
+    if (data) {
+        if (document.getElementById('feature-chat').classList.contains('d-none')) {
+            toggleFeature('chat');
+        }
+        setTimeout(() => {
+            if (window.selectGroup) window.selectGroup(data.id, data.title, data.project_name);
+        }, 400); // Wait for module transition
+        tacticalNotify(`CONNECTING TO UNIT: ${teamName}`);
+    } else {
+        tacticalNotify('UNIT COMMS NOT INITIALIZED');
+    }
+};
 
-            // 3. Sync with linked group (Auto-Chat Join)
-            const { data: groups } = await supabase.from('groups').select('id, members').eq('linked_hub_id', hubId);
-            if (groups && groups.length > 0) {
-                for (const g of groups) {
-                    if (!(g.members || []).includes(currentProfile.id)) {
-                        const newGMembers = [...(g.members || []), currentProfile.id];
-                        await supabase.from('groups').update({ members: newGMembers }).eq('id', g.id);
-                    }
+// Post Intel Form logic
+document.getElementById('editProfileForm')?.addEventListener('submit', async (e) => {
+    // Already handled above, just making sure I don't break others...
+});
+
+const addNewsForm = document.getElementById('addNewsForm');
+if (addNewsForm) {
+    addNewsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const newsId = document.getElementById('news-id').value;
+            const title = document.getElementById('news-title').value;
+            const status = document.getElementById('news-status').value;
+            const tagsStr = document.getElementById('news-tags').value;
+            const description = document.getElementById('news-desc').value;
+            const tags = tagsStr.split(',').map(t => t.trim());
+
+            const teamNameInput = document.getElementById('news-team-name');
+            const teamName = teamNameInput ? teamNameInput.value.trim() : '';
+
+            const newsData = { title, status, tags, description };
+
+            if (newsId) {
+                const { error } = await supabase.from('intelligence_hub').update(newsData).eq('id', newsId);
+                if (!error && teamName) {
+                    // Update lead booking
+                    await supabase.from('intelligence_booking').update({ team_name: teamName }).eq('hub_id', newsId).eq('slot_code', 'UNIT_LEAD');
                 }
+                if (error) throw error;
+            } else {
+                newsData.created_by = currentProfile?.id;
+                const { data: inserted, error } = await supabase.from('intelligence_hub').insert([newsData]).select();
+                if (error) throw error;
+
+                if (inserted && inserted.length > 0 && teamName) {
+                    await supabase.from('intelligence_booking').insert([{
+                        hub_id: inserted[0].id,
+                        team_name: teamName,
+                        member_ids: [currentProfile.id],
+                        slot_code: 'UNIT_LEAD'
+                    }]);
+                }
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('addNewsModal')).hide();
+            addNewsForm.reset();
+            document.getElementById('news-id').value = '';
+            document.getElementById('addNewsModalTitle').innerText = 'RECRUITMENT_POST_SYSTEM';
+            document.getElementById('addNewsSubmitBtn').innerText = 'POST_ANNOUNCEMENT';
+            initNewsModule();
+            tacticalNotify(newsId ? 'POST UPDATED' : 'ANNOUNCEMENT POSTED');
+        } catch (err) {
+            alert('OPERATION_FAILED: ' + err.message);
+        }
+    });
+}
+
+window.editNews = async (newsJson) => {
+    const news = JSON.parse(decodeURIComponent(newsJson));
+    document.getElementById('news-id').value = news.id;
+    document.getElementById('news-title').value = news.title;
+    document.getElementById('news-status').value = news.status;
+    document.getElementById('news-tags').value = (news.tags || []).join(', ');
+    document.getElementById('news-desc').value = news.description;
+
+    // Load existing team name if Lead
+    const { data: booking } = await supabase.from('intelligence_booking').select('team_name').eq('hub_id', news.id).eq('slot_code', 'UNIT_LEAD').limit(1).single();
+    if (document.getElementById('news-team-name')) {
+        document.getElementById('news-team-name').value = booking ? booking.team_name : '';
+    }
+
+    document.getElementById('addNewsModalTitle').innerText = 'EDIT_RECRUITMENT_POST';
+    document.getElementById('addNewsSubmitBtn').innerText = 'COMMIT_CHANGES';
+    new bootstrap.Modal(document.getElementById('addNewsModal')).show();
+};
+
+window.deleteNews = (id) => {
+    console.log('PURGING_ID:', id);
+    minimalConfirm('PURGE THIS ANNOUNCEMENT PERMANENTLY?', async () => {
+        try {
+            // 1. Clear unit deployments first
+            const { error: bkErr } = await supabase.from('intelligence_booking').delete().eq('hub_id', id);
+            if (bkErr) console.warn('Booking purge warning:', bkErr.message);
+
+            // 2. Unlink any groups
+            const { error: gErr } = await supabase.from('groups').update({ linked_hub_id: null }).eq('linked_hub_id', id);
+            if (gErr) console.warn('Group unlink warning:', gErr.message);
+
+            // 3. Final record deletion
+            const { error, count } = await supabase.from('intelligence_hub').delete({ count: 'exact' }).eq('id', id);
+
+            if (error) {
+                console.error('Delete error:', error);
+                throw error;
+            }
+
+            if (count === 0) {
+                // Check if row actually exists
+                const { data: verify } = await supabase.from('intelligence_hub').select('id').eq('id', id).single();
+                if (!verify) throw new Error(`NOT_FOUND: ROW_${id.substring(0, 8)} MISSING`);
+                else throw new Error('RLS_DENIED: PLEASE ENABLE DELETE FOR OWNER IN SUPABASE POLICIES');
             }
 
             initNewsModule();
-            tacticalNotify('ENLISTMENT_SUCCESS');
-        };
+            tacticalNotify('POST REMOVED');
+        } catch (err) {
+            console.error('Purge transaction failed:', err);
+            tacticalNotify(`PURGE_ABORTED: ${err.message}`);
+        }
+    }, true);
+};
 
-        const enlistForm = document.getElementById('enlistForm');
-        if (enlistForm) {
-            enlistForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const mode = document.getElementById('enlist-mode').value;
-                const hubId = document.getElementById('enlist-hub-id').value;
-                const teamName = document.getElementById('enlist-team-name').value;
-                const checkboxes = document.querySelectorAll('input[name="enlistMembers"]:checked');
-                const memberIds = Array.from(checkboxes).map(c => c.value);
+// --- VISIBILITY TOGGLE LOGIC ---
+let chatInitialized = false;
+let calendarInitialized = false;
 
-                if (mode === 'request') {
-                    if (memberIds.length === 0) {
-                        tacticalNotify('ERROR: NO PERSONNEL SELECTED');
-                        return;
-                    }
-                    const { error } = await supabase.from('intelligence_booking').insert([{
-                        hub_id: hubId,
-                        team_name: teamName,
-                        member_ids: memberIds,
-                        slot_code: 'UNIT_' + (Math.random().toString(36).substring(2, 5).toUpperCase())
-                    }]);
-                    if (!error) {
-                        bootstrap.Modal.getInstance(document.getElementById('enlistModal')).hide();
-                        initNewsModule();
-                        tacticalNotify('UNIT DEPLOYMENT SUCCESSFUL');
-                    } else {
-                        alert('DEPLOYMENT FAILED: ' + error.message);
-                    }
-                } else {
-                    // Manage mode
-                    await supabase.from('intelligence_booking').delete().eq('hub_id', hubId);
-                    if (memberIds.length > 0) {
-                        await supabase.from('intelligence_booking').insert([{
-                            hub_id: hubId,
-                            team_name: teamName || 'PRIMARY_UNIT',
-                            member_ids: memberIds,
-                            slot_code: 'UNIT_MAIN'
-                        }]);
-                    }
-                    bootstrap.Modal.getInstance(document.getElementById('enlistModal')).hide();
-                    initNewsModule();
-                    tacticalNotify('ROSTER UPDATED');
-                }
-            };
+function toggleFeature(type) {
+    const feature = document.getElementById(`feature-${type}`);
+    if (!feature) return;
+    const headBtn = document.getElementById(`${type}Btn`);
+    const types = ['home', 'chat', 'calendar', 'news', 'class'];
+
+    const isOpening = feature.classList.contains('d-none');
+
+    // 1. Close all features first to make it act like a navigation system (exclusive)
+    types.forEach(t => {
+        const f = document.getElementById(`feature-${t}`);
+        const b = document.getElementById(`${t}Btn`);
+        if (f) f.classList.add('d-none');
+        if (b) b.classList.remove('active');
+    });
+
+    if (isOpening || type === 'home') {
+        // 2. Open the requested feature
+        feature.classList.remove('d-none');
+        if (headBtn) headBtn.classList.add('active');
+
+        // Lazy Initialization
+        if (type === 'chat' && !chatInitialized) {
+            loadGroups();
+            loadUserSelection();
+            chatInitialized = true;
+        } else if (type === 'calendar') {
+            if (!calendarInitialized) {
+                initCalendarModule();
+                calendarInitialized = true;
+            }
+            // Crucial: ensure FullCalendar updates size when shown
+            setTimeout(() => { if (calendar) { calendar.updateSize(); calendar.render(); } }, 100);
+        } else if (type === 'news' && !newsInitialized) {
+            initNewsModule();
+            newsInitialized = true;
         }
 
-        window.openLinkedChat = async (hubId, teamName) => {
-            const { data, error } = await supabase.from('groups').select('*').eq('linked_hub_id', hubId).eq('title', teamName).single();
-            if (data) {
-                if (document.getElementById('feature-chat').classList.contains('d-none')) {
-                    toggleFeature('chat');
-                }
-                setTimeout(() => {
-                    if (window.selectGroup) window.selectGroup(data.id, data.title, data.project_name);
-                }, 400); // Wait for module transition
-                tacticalNotify(`CONNECTING TO UNIT: ${teamName}`);
-            } else {
-                tacticalNotify('UNIT COMMS NOT INITIALIZED');
-            }
-        };
-
-        // Post Intel Form logic
-        document.getElementById('editProfileForm')?.addEventListener('submit', async (e) => {
-            // Already handled above, just making sure I don't break others...
-        });
-
-        const addNewsForm = document.getElementById('addNewsForm');
-        if (addNewsForm) {
-            addNewsForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                try {
-                    const newsId = document.getElementById('news-id').value;
-                    const title = document.getElementById('news-title').value;
-                    const status = document.getElementById('news-status').value;
-                    const tagsStr = document.getElementById('news-tags').value;
-                    const description = document.getElementById('news-desc').value;
-                    const tags = tagsStr.split(',').map(t => t.trim());
-
-                    const teamNameInput = document.getElementById('news-team-name');
-                    const teamName = teamNameInput ? teamNameInput.value.trim() : '';
-
-                    const newsData = { title, status, tags, description };
-                    
-                    if (newsId) {
-                        const { error } = await supabase.from('intelligence_hub').update(newsData).eq('id', newsId);
-                        if (!error && teamName) {
-                            // Update lead booking
-                            await supabase.from('intelligence_booking').update({ team_name: teamName }).eq('hub_id', newsId).eq('slot_code', 'UNIT_LEAD');
-                        }
-                        if (error) throw error;
-                    } else {
-                        newsData.created_by = currentProfile?.id;
-                        const { data: inserted, error } = await supabase.from('intelligence_hub').insert([newsData]).select();
-                        if (error) throw error;
-                        
-                        if (inserted && inserted.length > 0 && teamName) {
-                            await supabase.from('intelligence_booking').insert([{
-                                hub_id: inserted[0].id,
-                                team_name: teamName,
-                                member_ids: [currentProfile.id],
-                                slot_code: 'UNIT_LEAD'
-                            }]);
-                        }
-                    }
-
-                    bootstrap.Modal.getInstance(document.getElementById('addNewsModal')).hide();
-                    addNewsForm.reset();
-                    document.getElementById('news-id').value = '';
-                    document.getElementById('addNewsModalTitle').innerText = 'RECRUITMENT_POST_SYSTEM';
-                    document.getElementById('addNewsSubmitBtn').innerText = 'POST_ANNOUNCEMENT';
-                    initNewsModule();
-                    tacticalNotify(newsId ? 'POST UPDATED' : 'ANNOUNCEMENT POSTED');
-                } catch (err) {
-                    alert('OPERATION_FAILED: ' + err.message);
-                }
+        // 3. Scroll to the top if opening home, or scroll to the feature
+        if (type === 'home') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            const nav = document.querySelector('nav');
+            const navHeight = nav ? nav.offsetHeight + 40 : 100;
+            const elementPosition = feature.getBoundingClientRect().top + window.pageYOffset;
+            window.scrollTo({
+                top: elementPosition - navHeight,
+                behavior: 'smooth'
             });
         }
+    } else {
+        // If closing a non-home feature, show home by default
+        toggleFeature('home');
+    }
+}
 
-        window.editNews = async (newsJson) => {
-            const news = JSON.parse(decodeURIComponent(newsJson));
-            document.getElementById('news-id').value = news.id;
-            document.getElementById('news-title').value = news.title;
-            document.getElementById('news-status').value = news.status;
-            document.getElementById('news-tags').value = (news.tags || []).join(', ');
-            document.getElementById('news-desc').value = news.description;
+// Helper to force-show a feature
+function showFeature(type) {
+    const feature = document.getElementById(`feature-${type}`);
+    if (feature.classList.contains('d-none')) toggleFeature(type);
+}
 
-            // Load existing team name if Lead
-            const { data: booking } = await supabase.from('intelligence_booking').select('team_name').eq('hub_id', news.id).eq('slot_code', 'UNIT_LEAD').limit(1).single();
-            if (document.getElementById('news-team-name')) {
-                document.getElementById('news-team-name').value = booking ? booking.team_name : '';
-            }
+function initCalendarModule() {
+    document.getElementById('viewGridBtn').onclick = () => {
+        document.getElementById('viewGridBtn').classList.add('active');
+        document.getElementById('viewListBtn').classList.remove('active');
+        document.getElementById('calendar').classList.remove('d-none');
+        document.getElementById('eventCardsContainer').classList.add('d-none');
+        calendar.changeView('dayGridMonth');
+    };
+    document.getElementById('viewListBtn').onclick = () => {
+        document.getElementById('viewListBtn').classList.add('active');
+        document.getElementById('viewGridBtn').classList.remove('active');
+        document.getElementById('calendar').classList.add('d-none');
+        document.getElementById('eventCardsContainer').classList.remove('d-none');
+        renderEventCards();
+    };
 
-            document.getElementById('addNewsModalTitle').innerText = 'EDIT_RECRUITMENT_POST';
-            document.getElementById('addNewsSubmitBtn').innerText = 'COMMIT_CHANGES';
-            new bootstrap.Modal(document.getElementById('addNewsModal')).show();
-        };
+    calendar = null;
+    loadEventUserSelection();
+    initCalendar();
+}
 
-        window.deleteNews = (id) => {
-            console.log('PURGING_ID:', id);
-            minimalConfirm('PURGE THIS ANNOUNCEMENT PERMANENTLY?', async () => {
-                try {
-                    // 1. Clear unit deployments first
-                    const { error: bkErr } = await supabase.from('intelligence_booking').delete().eq('hub_id', id);
-                    if (bkErr) console.warn('Booking purge warning:', bkErr.message);
+async function renderEventCards() {
+    const container = document.getElementById('eventCardsContainer');
+    const { data: events, error } = await supabase.from('calendar_events').select('*').order('start', { ascending: true });
 
-                    // 2. Unlink any groups
-                    const { error: gErr } = await supabase.from('groups').update({ linked_hub_id: null }).eq('linked_hub_id', id);
-                    if (gErr) console.warn('Group unlink warning:', gErr.message);
+    if (error || !events || events.length === 0) {
+        container.innerHTML = `<div class="col-12 p-5 text-center text-muted x-small fw-bold">NO MISSION DATA LOGGED.</div>`;
+        return;
+    }
 
-                    // 3. Final record deletion
-                    const { error, count } = await supabase.from('intelligence_hub').delete({ count: 'exact' }).eq('id', id);
+    const uid = currentProfile?.id;
+    const filtered = events.filter(e =>
+        e.scope === 'global' ||
+        e.created_by === uid ||
+        (e.shared_with && e.shared_with.includes(uid))
+    );
 
-                    if (error) {
-                        console.error('Delete error:', error);
-                        throw error;
-                    }
+    container.innerHTML = filtered.map(e => {
+        const date = new Date(e.start);
+        const day = date.getDate();
+        const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+        const isTask = e.is_task;
 
-                    if (count === 0) {
-                        // Check if row actually exists
-                        const { data: verify } = await supabase.from('intelligence_hub').select('id').eq('id', id).single();
-                        if (!verify) throw new Error(`NOT_FOUND: ROW_${id.substring(0, 8)} MISSING`);
-                        else throw new Error('RLS_DENIED: PLEASE ENABLE DELETE FOR OWNER IN SUPABASE POLICIES');
-                    }
-
-                    initNewsModule();
-                    tacticalNotify('POST REMOVED');
-                } catch (err) {
-                    console.error('Purge transaction failed:', err);
-                    tacticalNotify(`PURGE_ABORTED: ${err.message}`);
-                }
-            }, true);
-        };
-
-        // --- VISIBILITY TOGGLE LOGIC ---
-        let chatInitialized = false;
-        let calendarInitialized = false;
-
-        function toggleFeature(type) {
-            const feature = document.getElementById(`feature-${type}`);
-            if (!feature) return;
-            const headBtn = document.getElementById(`${type}Btn`);
-            const types = ['home', 'chat', 'calendar', 'news', 'class'];
-
-            const isOpening = feature.classList.contains('d-none');
-
-            // 1. Close all features first to make it act like a navigation system (exclusive)
-            types.forEach(t => {
-                const f = document.getElementById(`feature-${t}`);
-                const b = document.getElementById(`${t}Btn`);
-                if (f) f.classList.add('d-none');
-                if (b) b.classList.remove('active');
-            });
-
-            if (isOpening || type === 'home') {
-                // 2. Open the requested feature
-                feature.classList.remove('d-none');
-                if (headBtn) headBtn.classList.add('active');
-
-                // Lazy Initialization
-                if (type === 'chat' && !chatInitialized) {
-                    loadGroups();
-                    loadUserSelection();
-                    chatInitialized = true;
-                } else if (type === 'calendar') {
-                    if (!calendarInitialized) {
-                        initCalendarModule();
-                        calendarInitialized = true;
-                    }
-                    // Crucial: ensure FullCalendar updates size when shown
-                    setTimeout(() => { if (calendar) { calendar.updateSize(); calendar.render(); } }, 100);
-                } else if (type === 'news' && !newsInitialized) {
-                    initNewsModule();
-                    newsInitialized = true;
-                }
-
-                // 3. Scroll to the top if opening home, or scroll to the feature
-                if (type === 'home') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                } else {
-                    const nav = document.querySelector('nav');
-                    const navHeight = nav ? nav.offsetHeight + 40 : 100;
-                    const elementPosition = feature.getBoundingClientRect().top + window.pageYOffset;
-                    window.scrollTo({
-                        top: elementPosition - navHeight,
-                        behavior: 'smooth'
-                    });
-                }
-            } else {
-                // If closing a non-home feature, show home by default
-                toggleFeature('home');
-            }
-        }
-
-        // Helper to force-show a feature
-        function showFeature(type) {
-            const feature = document.getElementById(`feature-${type}`);
-            if (feature.classList.contains('d-none')) toggleFeature(type);
-        }
-
-        function initCalendarModule() {
-            document.getElementById('viewGridBtn').onclick = () => {
-                document.getElementById('viewGridBtn').classList.add('active');
-                document.getElementById('viewListBtn').classList.remove('active');
-                document.getElementById('calendar').classList.remove('d-none');
-                document.getElementById('eventCardsContainer').classList.add('d-none');
-                calendar.changeView('dayGridMonth');
-            };
-            document.getElementById('viewListBtn').onclick = () => {
-                document.getElementById('viewListBtn').classList.add('active');
-                document.getElementById('viewGridBtn').classList.remove('active');
-                document.getElementById('calendar').classList.add('d-none');
-                document.getElementById('eventCardsContainer').classList.remove('d-none');
-                renderEventCards();
-            };
-
-            calendar = null;
-            loadEventUserSelection();
-            initCalendar();
-        }
-
-        async function renderEventCards() {
-            const container = document.getElementById('eventCardsContainer');
-            const { data: events, error } = await supabase.from('calendar_events').select('*').order('start', { ascending: true });
-
-            if (error || !events || events.length === 0) {
-                container.innerHTML = `<div class="col-12 p-5 text-center text-muted x-small fw-bold">NO MISSION DATA LOGGED.</div>`;
-                return;
-            }
-
-            const uid = currentProfile?.id;
-            const filtered = events.filter(e =>
-                e.scope === 'global' ||
-                e.created_by === uid ||
-                (e.shared_with && e.shared_with.includes(uid))
-            );
-
-            container.innerHTML = filtered.map(e => {
-                const date = new Date(e.start);
-                const day = date.getDate();
-                const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-                const isTask = e.is_task;
-
-                return `
+        return `
                 <div class="col">
                     <div class="tactical-card h-100 d-flex mb-0 ${isTask ? 'border-warning shadow-sm' : 'border-dark'}" style="border: 1px solid; transition: all 0.3s ease; background: #fff;">
                         <div class="p-3 d-flex flex-column w-100">
@@ -771,93 +1040,93 @@ import { supabase } from './authen/auth.js';
                     </div>
                 </div>
                 `;
-            }).join('');
-        }
+    }).join('');
+}
 
-        window.viewEventById = async (id) => {
-            const { data: e } = await supabase.from('calendar_events').select('*').eq('id', id).single();
-            if (e) {
-                // Simulate FullCalendar event click object structure
-                const mockEvent = {
-                    id: e.id,
-                    title: e.title,
-                    start: e.start,
-                    end: e.end,
-                    allDay: !e.start.includes('T'),
-                    extendedProps: {
-                        scope: e.scope,
-                        description: e.description,
-                        is_task: e.is_task,
-                        created_by: e.created_by,
-                        shared_with: e.shared_with
-                    }
-                };
-                // Find existing calendar trigger or just open modal manually 
-                // Using the logic from eventClick (refactored would be better but let's be quick)
-                showEventModal(mockEvent);
+window.viewEventById = async (id) => {
+    const { data: e } = await supabase.from('calendar_events').select('*').eq('id', id).single();
+    if (e) {
+        // Simulate FullCalendar event click object structure
+        const mockEvent = {
+            id: e.id,
+            title: e.title,
+            start: e.start,
+            end: e.end,
+            allDay: !e.start.includes('T'),
+            extendedProps: {
+                scope: e.scope,
+                description: e.description,
+                is_task: e.is_task,
+                created_by: e.created_by,
+                shared_with: e.shared_with
             }
         };
+        // Find existing calendar trigger or just open modal manually 
+        // Using the logic from eventClick (refactored would be better but let's be quick)
+        showEventModal(mockEvent);
+    }
+};
 
-        // Helper for showing event modal from any source
-        function showEventModal(evt) {
-            const props = evt.extendedProps;
-            document.getElementById('viewEventTitle').innerText = evt.title.toUpperCase();
-            document.getElementById('viewEventID').innerText = `TAG: ${evt.id.substring(0, 8).toUpperCase()}`;
-            document.getElementById('viewEventScope').innerText = props.scope || 'PERSONAL';
-            document.getElementById('viewEventDescription').innerText = props.description || 'NO ADDITIONAL NOTES';
-            const startStr = evt.start ? new Date(evt.start).toLocaleString() : '--';
-            document.getElementById('viewEventTime').innerText = evt.allDay ? `${evt.startStr || new Date(evt.start).toDateString()}` : `${startStr}`;
-            const taskArea = document.getElementById('viewEventTaskStatus');
-            taskArea.innerHTML = props.is_task ? '<span class="badge bg-warning text-dark rounded-0 px-2 py-1" style="font-size:0.5rem">HIGH PRIORITY TASK</span>' : '';
+// Helper for showing event modal from any source
+function showEventModal(evt) {
+    const props = evt.extendedProps;
+    document.getElementById('viewEventTitle').innerText = evt.title.toUpperCase();
+    document.getElementById('viewEventID').innerText = `TAG: ${evt.id.substring(0, 8).toUpperCase()}`;
+    document.getElementById('viewEventScope').innerText = props.scope || 'PERSONAL';
+    document.getElementById('viewEventDescription').innerText = props.description || 'NO ADDITIONAL NOTES';
+    const startStr = evt.start ? new Date(evt.start).toLocaleString() : '--';
+    document.getElementById('viewEventTime').innerText = evt.allDay ? `${evt.startStr || new Date(evt.start).toDateString()}` : `${startStr}`;
+    const taskArea = document.getElementById('viewEventTaskStatus');
+    taskArea.innerHTML = props.is_task ? '<span class="badge bg-warning text-dark rounded-0 px-2 py-1" style="font-size:0.5rem">HIGH PRIORITY TASK</span>' : '';
 
-            const adminActions = document.getElementById('eventAdminActions');
-            if (props.created_by === currentProfile?.id) {
-                adminActions.classList.remove('d-none');
-                // Setup edit/delete handlers... (existing logic in initCalendar needs to be shared)
-            } else { adminActions.classList.add('d-none'); }
+    const adminActions = document.getElementById('eventAdminActions');
+    if (props.created_by === currentProfile?.id) {
+        adminActions.classList.remove('d-none');
+        // Setup edit/delete handlers... (existing logic in initCalendar needs to be shared)
+    } else { adminActions.classList.add('d-none'); }
 
-            new bootstrap.Modal(document.getElementById('viewEventModal')).show();
-        }
+    new bootstrap.Modal(document.getElementById('viewEventModal')).show();
+}
 
-        // --- CHAT LOGIC ---
-        let activeGroupId = null;
-        async function loadGroups() {
-            // Populate Hubs for linking
-            const { data: hubs } = await supabase.from('intelligence_hub').select('id, title');
-            const hubSelect = document.getElementById('groupLinkedHubId');
-            if (hubSelect && hubs) {
-                hubSelect.innerHTML = '<option value="">-- LINK TO COMPETITION (OPTIONAL) --</option>' +
-                    hubs.map(h => `<option value="${h.id}">${h.title.toUpperCase()}</option>`).join('');
-            }
+// --- CHAT LOGIC ---
+let activeGroupId = null;
+async function loadGroups() {
+    // Populate Hubs for linking
+    const { data: hubs } = await supabase.from('intelligence_hub').select('id, title');
+    const hubSelect = document.getElementById('groupLinkedHubId');
+    if (hubSelect && hubs) {
+        hubSelect.innerHTML = '<option value="">-- LINK TO COMPETITION (OPTIONAL) --</option>' +
+            hubs.map(h => `<option value="${h.id}">${h.title.toUpperCase()}</option>`).join('');
+    }
 
-            const sidebar = document.getElementById('groupsSidebarList');
-            const { data: groups, error } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
-            if (error || !groups || groups.length === 0) {
-                sidebar.innerHTML = '<div class="text-center p-5 text-muted small">NO ACTIVE PROJECTS</div>';
-                return;
-            }
-            sidebar.innerHTML = groups.map(g => `
+    const sidebar = document.getElementById('groupsSidebarList');
+    const { data: groups, error } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
+    if (error || !groups || groups.length === 0) {
+        sidebar.innerHTML = '<div class="text-center p-5 text-muted small">NO ACTIVE PROJECTS</div>';
+        return;
+    }
+    sidebar.innerHTML = groups.map(g => `
                 <div class="group-item p-3 ${activeGroupId === g.id ? 'active' : ''}" data-group-id="${g.id}" onclick="selectGroup('${g.id}', '${g.title.replace(/'/g, "\\'")}', '${(g.project_name || 'Generic Project').replace(/'/g, "\\'")}')">
                     <p class="m-0 fw-bold small text-uppercase">${g.title}</p>
                     <p class="m-0 text-muted x-small" style="font-size: 0.65rem; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${g.project_name || 'N/A'}</p>
                 </div>
             `).join('');
 
-            // Subscriptions are handled by initRealtimeSync
-        }
+    // Subscriptions are handled by initRealtimeSync
+}
 
-        window.selectGroup = async (id, title, projectName) => {
-            activeGroupId = id;
-            const { data: group } = await supabase.from('groups').select('created_by').eq('id', id).single();
-            if (!group) {
-                tacticalNotify('ERROR: GROUP HAS BEEN PURGED');
-                return;
-            }
-            const isCreator = group.created_by === currentProfile?.id;
+window.selectGroup = async (id, title, projectName) => {
+    activeGroupId = id;
+    const { data: group } = await supabase.from('groups').select('created_by').eq('id', id).single();
+    if (!group) {
+        tacticalNotify('ERROR: GROUP HAS BEEN PURGED');
+        return;
+    }
+    const isCreator = group.created_by === currentProfile?.id;
 
-            const meta = document.getElementById('groupMeta');
-            if (meta) {
-                meta.innerHTML = `
+    const meta = document.getElementById('groupMeta');
+    if (meta) {
+        meta.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center w-100 px-3">
                         <div class="text-start">
                             <p class="m-0 fw-bold text-uppercase" style="font-size: 0.65rem;">${title}</p>
@@ -869,225 +1138,225 @@ import { supabase } from './authen/auth.js';
                         </div>
                     </div>
                 `;
+    }
+    const inputArea = document.getElementById('chatInputArea');
+    if (inputArea) inputArea.classList.remove('d-none');
+
+    const actions = document.getElementById('groupActions');
+    if (actions) {
+        actions.classList.remove('d-none');
+        document.getElementById('clearChatBtn').classList.toggle('d-none', !isCreator);
+        document.getElementById('deleteGroupBtn').classList.toggle('d-none', !isCreator);
+        document.getElementById('leaveGroupBtn').classList.toggle('d-none', isCreator);
+
+        document.querySelectorAll('#groupActions button').forEach(btn => btn.style.fontSize = '0.55rem');
+
+        document.getElementById('clearChatBtn').onclick = () => purgeHistory(id);
+        document.getElementById('deleteGroupBtn').onclick = () => terminateProject(id);
+        document.getElementById('membersBtn').onclick = () => viewMembers(id);
+        document.getElementById('leaveGroupBtn').onclick = () => leaveGroup(id);
+    }
+
+    document.querySelectorAll('.group-item').forEach(el => el.classList.remove('active'));
+    const activeEl = document.querySelector(`.group-item[data-group-id="${id}"]`);
+    if (activeEl) activeEl.classList.add('active');
+
+    loadMessages(id);
+};
+let selectedChatFile = null;
+let replyTo = null;
+window.initReply = (id, sender, text) => {
+    replyTo = { id, sender, text };
+    const preview = document.getElementById('replyPreviewArea');
+    const previewText = document.getElementById('replyPreviewText');
+    if (preview && previewText) {
+        previewText.innerText = `${sender.toUpperCase()}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`;
+        preview.classList.remove('d-none');
+    }
+};
+window.cancelReply = () => {
+    replyTo = null;
+    const preview = document.getElementById('replyPreviewArea');
+    if (preview) preview.classList.add('d-none');
+};
+
+async function loadMessages(groupId) {
+    const feed = document.getElementById('chatMessageFeed');
+    const { data: messages, error } = await supabase
+        .from('messages')
+        .select(`*, profiles:sender_id(callsign)`)
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true });
+
+    if (error) { feed.innerHTML = `<div class="p-4 text-danger small text-center">ERROR: ${error.message}</div>`; return; }
+
+    // Render existing messages
+    feed.innerHTML = messages.length > 0 ? messages.map(m => renderMessageHtml(m)).join('') : '<div class="py-5 text-muted text-center small">QUIET FREQUENCY. START COMMS...</div>';
+    feed.scrollTop = feed.scrollHeight;
+
+    // Handle Real-time Messages
+    if (messageSubscription) supabase.removeChannel(messageSubscription);
+
+    messageSubscription = supabase.channel(`public:messages:group_id=eq.${groupId}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `group_id=eq.${groupId}`
+        }, async (payload) => {
+            const newMsg = payload.new;
+            // Fetch profile for name if missing in cache
+            if (!profileCache.has(newMsg.sender_id)) {
+                const { data: p } = await supabase.from('profiles').select('callsign').eq('id', newMsg.sender_id).single();
+                if (p) profileCache.set(newMsg.sender_id, p.callsign);
             }
-            const inputArea = document.getElementById('chatInputArea');
-            if (inputArea) inputArea.classList.remove('d-none');
+            newMsg.profiles = { callsign: profileCache.get(newMsg.sender_id) };
 
-            const actions = document.getElementById('groupActions');
-            if (actions) {
-                actions.classList.remove('d-none');
-                document.getElementById('clearChatBtn').classList.toggle('d-none', !isCreator);
-                document.getElementById('deleteGroupBtn').classList.toggle('d-none', !isCreator);
-                document.getElementById('leaveGroupBtn').classList.toggle('d-none', isCreator);
-
-                document.querySelectorAll('#groupActions button').forEach(btn => btn.style.fontSize = '0.55rem');
-
-                document.getElementById('clearChatBtn').onclick = () => purgeHistory(id);
-                document.getElementById('deleteGroupBtn').onclick = () => terminateProject(id);
-                document.getElementById('membersBtn').onclick = () => viewMembers(id);
-                document.getElementById('leaveGroupBtn').onclick = () => leaveGroup(id);
-            }
-
-            document.querySelectorAll('.group-item').forEach(el => el.classList.remove('active'));
-            const activeEl = document.querySelector(`.group-item[data-group-id="${id}"]`);
-            if (activeEl) activeEl.classList.add('active');
-
-            loadMessages(id);
-        };
-        let selectedChatFile = null;
-        let replyTo = null;
-        window.initReply = (id, sender, text) => {
-            replyTo = { id, sender, text };
-            const preview = document.getElementById('replyPreviewArea');
-            const previewText = document.getElementById('replyPreviewText');
-            if (preview && previewText) {
-                previewText.innerText = `${sender.toUpperCase()}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`;
-                preview.classList.remove('d-none');
-            }
-        };
-        window.cancelReply = () => {
-            replyTo = null;
-            const preview = document.getElementById('replyPreviewArea');
-            if (preview) preview.classList.add('d-none');
-        };
-
-        async function loadMessages(groupId) {
-            const feed = document.getElementById('chatMessageFeed');
-            const { data: messages, error } = await supabase
-                .from('messages')
-                .select(`*, profiles:sender_id(callsign)`)
-                .eq('group_id', groupId)
-                .order('created_at', { ascending: true });
-
-            if (error) { feed.innerHTML = `<div class="p-4 text-danger small text-center">ERROR: ${error.message}</div>`; return; }
-
-            // Render existing messages
-            feed.innerHTML = messages.length > 0 ? messages.map(m => renderMessageHtml(m)).join('') : '<div class="py-5 text-muted text-center small">QUIET FREQUENCY. START COMMS...</div>';
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = renderMessageHtml(newMsg);
+            const emptyState = feed.querySelector('.py-5.text-muted');
+            if (emptyState) emptyState.remove();
+            feed.appendChild(tempDiv.firstElementChild);
             feed.scrollTop = feed.scrollHeight;
 
-            // Handle Real-time Messages
-            if (messageSubscription) supabase.removeChannel(messageSubscription);
-
-            messageSubscription = supabase.channel(`public:messages:group_id=eq.${groupId}`)
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `group_id=eq.${groupId}`
-                }, async (payload) => {
-                    const newMsg = payload.new;
-                    // Fetch profile for name if missing in cache
-                    if (!profileCache.has(newMsg.sender_id)) {
-                        const { data: p } = await supabase.from('profiles').select('callsign').eq('id', newMsg.sender_id).single();
-                        if (p) profileCache.set(newMsg.sender_id, p.callsign);
-                    }
-                    newMsg.profiles = { callsign: profileCache.get(newMsg.sender_id) };
-
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = renderMessageHtml(newMsg);
-                    const emptyState = feed.querySelector('.py-5.text-muted');
-                    if (emptyState) emptyState.remove();
-                    feed.appendChild(tempDiv.firstElementChild);
-                    feed.scrollTop = feed.scrollHeight;
-
-                    if (newMsg.sender_id !== currentProfile.id) {
-                        tacticalNotify(`INCOMING: ${newMsg.profiles.callsign.toUpperCase()}`);
-                    }
-                })
-                .on('postgres_changes', {
-                    event: 'DELETE',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `group_id=eq.${groupId}`
-                }, () => {
-                    loadExistingMessages(groupId);
-                })
-                .subscribe((status) => {
-                    const statusDot = document.getElementById('chatSyncStatus');
-                    const statusText = document.getElementById('chatSyncText');
-                    if (statusDot && statusText) {
-                        if (status === 'SUBSCRIBED') {
-                            statusDot.className = 'rounded-circle bg-success shadow-pulse';
-                            statusText.innerText = 'SYNC: SECURE_LINK_ACTIVE';
-                            statusText.className = 'x-small fw-bold text-success';
-                        } else if (status === 'CHANNEL_ERROR') {
-                            statusDot.className = 'rounded-circle bg-danger';
-                            statusText.innerText = 'SYNC: LINK_ERROR';
-                            statusText.className = 'x-small fw-bold text-danger';
-                        } else {
-                            statusDot.className = 'rounded-circle bg-warning';
-                            statusText.innerText = 'SYNC: CONNECTING...';
-                            statusText.className = 'x-small fw-bold text-warning';
-                        }
-                    }
-                });
-
-            async function loadExistingMessages(gId) {
-                const { data } = await supabase.from('messages').select(`*, profiles:sender_id(callsign)`).eq('group_id', gId).order('created_at', { ascending: true });
-                if (data && gId === activeGroupId) {
-                    feed.innerHTML = data.length > 0 ? data.map(m => renderMessageHtml(m)).join('') : '<div class="py-5 text-muted text-center small">QUIET FREQUENCY. START COMMS...</div>';
-                    feed.scrollTop = feed.scrollHeight;
+            if (newMsg.sender_id !== currentProfile.id) {
+                tacticalNotify(`INCOMING: ${newMsg.profiles.callsign.toUpperCase()}`);
+            }
+        })
+        .on('postgres_changes', {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'messages',
+            filter: `group_id=eq.${groupId}`
+        }, () => {
+            loadExistingMessages(groupId);
+        })
+        .subscribe((status) => {
+            const statusDot = document.getElementById('chatSyncStatus');
+            const statusText = document.getElementById('chatSyncText');
+            if (statusDot && statusText) {
+                if (status === 'SUBSCRIBED') {
+                    statusDot.className = 'rounded-circle bg-success shadow-pulse';
+                    statusText.innerText = 'SYNC: SECURE_LINK_ACTIVE';
+                    statusText.className = 'x-small fw-bold text-success';
+                } else if (status === 'CHANNEL_ERROR') {
+                    statusDot.className = 'rounded-circle bg-danger';
+                    statusText.innerText = 'SYNC: LINK_ERROR';
+                    statusText.className = 'x-small fw-bold text-danger';
+                } else {
+                    statusDot.className = 'rounded-circle bg-warning';
+                    statusText.innerText = 'SYNC: CONNECTING...';
+                    statusText.className = 'x-small fw-bold text-warning';
                 }
             }
+        });
 
-            const imgInput = document.getElementById('chatImageInput');
-            const previewArea = document.getElementById('imagePreviewArea');
-            const fileNameDisp = document.getElementById('fileNameDisplay');
-            const clearImg = document.getElementById('clearImage');
-
-            if (imgInput) {
-                imgInput.onchange = (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        selectedChatFile = file;
-                        fileNameDisp.innerText = file.name.toUpperCase();
-                        previewArea.classList.remove('d-none');
-                    }
-                };
-            }
-            if (clearImg) {
-                clearImg.onclick = () => {
-                    selectedChatFile = null;
-                    previewArea.classList.add('d-none');
-                    imgInput.value = '';
-                };
-            }
-
-            const form = document.getElementById('chatMessageForm');
-            if (form) {
-                form.onsubmit = async (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    const input = document.getElementById('chatInput');
-                    const textValue = input.value.trim();
-                    if (!textValue && !selectedChatFile) return false;
-
-                    let fileUrl = null;
-                    let fileName = null;
-                    let isImage = false;
-
-                    if (selectedChatFile) {
-                        const fileExt = selectedChatFile.name.split('.').pop().toLowerCase();
-                        // Robust image detection
-                        isImage = selectedChatFile.type.startsWith('image/') || 
-                                 ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(fileExt);
-                                 
-                        const fName = `${Math.random()}.${fileExt}`;
-                        const filePath = `chat_assets/${groupId}/${fName}`;
-                        
-                        const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedChatFile);
-                        if (uploadError) {
-                            tacticalNotify(`UPLOAD_ERR: ${uploadError.message.toUpperCase()}`);
-                            console.error('File Upload Error:', uploadError);
-                            return false;
-                        }
-
-                        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-                        fileUrl = publicUrl;
-                        fileName = selectedChatFile.name;
-                    }
-
-                    const messageData = {
-                        group_id: groupId,
-                        sender_id: currentProfile.id,
-                        text: textValue,
-                        image_url: isImage ? fileUrl : null,
-                        file_url: !isImage ? fileUrl : null,
-                        file_name: !isImage ? fileName : null
-                    };
-
-                    if (replyTo) {
-                        messageData.reply_to_id = replyTo.id;
-                        messageData.reply_context = { sender: replyTo.sender, text: replyTo.text };
-                    }
-
-                    const { error: sendError } = await supabase.from('messages').insert([messageData]);
-
-                    if (!sendError) {
-                        input.value = '';
-                        selectedChatFile = null;
-                        cancelReply();
-                        if (previewArea) previewArea.classList.add('d-none');
-                    }
-                    return false;
-                };
-            }
+    async function loadExistingMessages(gId) {
+        const { data } = await supabase.from('messages').select(`*, profiles:sender_id(callsign)`).eq('group_id', gId).order('created_at', { ascending: true });
+        if (data && gId === activeGroupId) {
+            feed.innerHTML = data.length > 0 ? data.map(m => renderMessageHtml(m)).join('') : '<div class="py-5 text-muted text-center small">QUIET FREQUENCY. START COMMS...</div>';
+            feed.scrollTop = feed.scrollHeight;
         }
+    }
 
-        function renderMessageHtml(m) {
-            const isMe = m.sender_id === currentProfile.id;
-            const name = isMe ? 'ME' : (m.profiles?.callsign || profileCache.get(m.sender_id) || 'OPERATIVE');
-            
-            let replyHtml = '';
-            if (m.reply_context) {
-                replyHtml = `
+    const imgInput = document.getElementById('chatImageInput');
+    const previewArea = document.getElementById('imagePreviewArea');
+    const fileNameDisp = document.getElementById('fileNameDisplay');
+    const clearImg = document.getElementById('clearImage');
+
+    if (imgInput) {
+        imgInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedChatFile = file;
+                fileNameDisp.innerText = file.name.toUpperCase();
+                previewArea.classList.remove('d-none');
+            }
+        };
+    }
+    if (clearImg) {
+        clearImg.onclick = () => {
+            selectedChatFile = null;
+            previewArea.classList.add('d-none');
+            imgInput.value = '';
+        };
+    }
+
+    const form = document.getElementById('chatMessageForm');
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const input = document.getElementById('chatInput');
+            const textValue = input.value.trim();
+            if (!textValue && !selectedChatFile) return false;
+
+            let fileUrl = null;
+            let fileName = null;
+            let isImage = false;
+
+            if (selectedChatFile) {
+                const fileExt = selectedChatFile.name.split('.').pop().toLowerCase();
+                // Robust image detection
+                isImage = selectedChatFile.type.startsWith('image/') ||
+                    ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExt);
+
+                const fName = `${Math.random()}.${fileExt}`;
+                const filePath = `chat_assets/${groupId}/${fName}`;
+
+                const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedChatFile);
+                if (uploadError) {
+                    tacticalNotify(`UPLOAD_ERR: ${uploadError.message.toUpperCase()}`);
+                    console.error('File Upload Error:', uploadError);
+                    return false;
+                }
+
+                const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                fileUrl = publicUrl;
+                fileName = selectedChatFile.name;
+            }
+
+            const messageData = {
+                group_id: groupId,
+                sender_id: currentProfile.id,
+                text: textValue,
+                image_url: isImage ? fileUrl : null,
+                file_url: !isImage ? fileUrl : null,
+                file_name: !isImage ? fileName : null
+            };
+
+            if (replyTo) {
+                messageData.reply_to_id = replyTo.id;
+                messageData.reply_context = { sender: replyTo.sender, text: replyTo.text };
+            }
+
+            const { error: sendError } = await supabase.from('messages').insert([messageData]);
+
+            if (!sendError) {
+                input.value = '';
+                selectedChatFile = null;
+                cancelReply();
+                if (previewArea) previewArea.classList.add('d-none');
+            }
+            return false;
+        };
+    }
+}
+
+function renderMessageHtml(m) {
+    const isMe = m.sender_id === currentProfile.id;
+    const name = isMe ? 'ME' : (m.profiles?.callsign || profileCache.get(m.sender_id) || 'OPERATIVE');
+
+    let replyHtml = '';
+    if (m.reply_context) {
+        replyHtml = `
                     <div class="p-1 px-2 mb-1 bg-secondary bg-opacity-25 border-start border-3 border-dark x-small" style="text-align: left; opacity: 0.8; font-size: 0.55rem;">
                         <span class="fw-black text-uppercase d-block">${m.reply_context.sender}</span>
                         <span class="text-truncate d-block" style="max-width: 15rem;">${m.reply_context.text || 'ATTACHMENT'}</span>
                     </div>
                 `;
-            }
+    }
 
-            return `
+    return `
                 <div class="msg-line px-3 ${isMe ? 'text-end' : 'text-start'} mb-2 group">
                     <div class="d-flex align-items-center gap-2 ${isMe ? 'flex-row-reverse' : ''}">
                         <span class="sender small fw-bold ${isMe ? 'text-primary' : 'text-dark'}" style="font-size: 0.55rem; letter-spacing: 0.5px;">${name.toUpperCase()}</span>
@@ -1108,91 +1377,91 @@ import { supabase } from './authen/auth.js';
                     </div>
                 </div>
             `;
-        }
+}
 
-        function tacticalNotify(msg) {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = 'tactical-toast mb-2';
-            toast.innerText = msg;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
+function tacticalNotify(msg) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'tactical-toast mb-2';
+    toast.innerText = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
 
-        function minimalConfirm(text, onYes, isDanger = false) {
-            const modalEl = document.getElementById('minimalConfirmModal');
-            if (!modalEl) return;
-            const modal = new bootstrap.Modal(modalEl);
-            document.getElementById('confirmText').innerText = text.toUpperCase();
-            const yesBtn = document.getElementById('confirmYes');
-            const icon = document.getElementById('confirmIcon');
+function minimalConfirm(text, onYes, isDanger = false) {
+    const modalEl = document.getElementById('minimalConfirmModal');
+    if (!modalEl) return;
+    const modal = new bootstrap.Modal(modalEl);
+    document.getElementById('confirmText').innerText = text.toUpperCase();
+    const yesBtn = document.getElementById('confirmYes');
+    const icon = document.getElementById('confirmIcon');
 
-            if (isDanger) {
-                yesBtn.className = 'btn btn-danger btn-xs w-100 py-2 rounded-0 text-uppercase fw-bold';
-                icon.className = 'bi bi-exclamation-octagon-fill text-danger mb-3 display-6 d-block';
-            } else {
-                yesBtn.className = 'btn btn-warning btn-xs w-100 py-2 rounded-0 text-uppercase fw-bold';
-                icon.className = 'bi bi-exclamation-triangle text-warning mb-3 display-6 d-block';
-            }
+    if (isDanger) {
+        yesBtn.className = 'btn btn-danger btn-xs w-100 py-2 rounded-0 text-uppercase fw-bold';
+        icon.className = 'bi bi-exclamation-octagon-fill text-danger mb-3 display-6 d-block';
+    } else {
+        yesBtn.className = 'btn btn-warning btn-xs w-100 py-2 rounded-0 text-uppercase fw-bold';
+        icon.className = 'bi bi-exclamation-triangle text-warning mb-3 display-6 d-block';
+    }
 
-            yesBtn.onclick = () => {
-                onYes();
-                modal.hide();
-            };
-            modal.show();
-        }
+    yesBtn.onclick = () => {
+        onYes();
+        modal.hide();
+    };
+    modal.show();
+}
 
-        async function purgeHistory(groupId) {
-            minimalConfirm('PURGE ALL TRANSMISSION HISTORY?', async () => {
-                const { error } = await supabase.from('messages').delete().eq('group_id', groupId);
-                if (!error) { loadMessages(groupId); tacticalNotify('HISTORY PURGED'); }
-            }, true);
-        }
+async function purgeHistory(groupId) {
+    minimalConfirm('PURGE ALL TRANSMISSION HISTORY?', async () => {
+        const { error } = await supabase.from('messages').delete().eq('group_id', groupId);
+        if (!error) { loadMessages(groupId); tacticalNotify('HISTORY PURGED'); }
+    }, true);
+}
 
-        async function terminateProject(groupId) {
-            minimalConfirm('TERMINATE PROJECT ENTITY PERMANENTLY?', async () => {
-                const { error } = await supabase.from('groups').delete().eq('id', groupId);
-                if (!error) { activeGroupId = null; showFeature('chat'); tacticalNotify('ENTITY TERMINATED'); }
-            }, true);
-        }
+async function terminateProject(groupId) {
+    minimalConfirm('TERMINATE PROJECT ENTITY PERMANENTLY?', async () => {
+        const { error } = await supabase.from('groups').delete().eq('id', groupId);
+        if (!error) { activeGroupId = null; showFeature('chat'); tacticalNotify('ENTITY TERMINATED'); }
+    }, true);
+}
 
-        async function leaveGroup(groupId) {
-            minimalConfirm('EXIT THIS PROJECT ENTITY? YOU WILL BE DE-COUPLED FROM RECRUITMENT ENTITY AS WELL.', async () => {
-                const { data: group } = await supabase.from('groups').select('members, linked_hub_id').eq('id', groupId).single();
-                const newMembers = (group.members || []).filter(m => m !== currentProfile.id);
-                
-                await supabase.from('groups').update({ members: newMembers }).eq('id', groupId);
-                
-                if (group.linked_hub_id) {
-                    const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', group.linked_hub_id);
-                    if (bookings) {
-                        for (const bk of bookings) {
-                            if ((bk.member_ids || []).includes(currentProfile.id)) {
-                                const newBKMems = bk.member_ids.filter(m => m !== currentProfile.id);
-                                await supabase.from('intelligence_booking').update({ member_ids: newBKMems }).eq('id', bk.id);
-                            }
-                        }
+async function leaveGroup(groupId) {
+    minimalConfirm('EXIT THIS PROJECT ENTITY? YOU WILL BE DE-COUPLED FROM RECRUITMENT ENTITY AS WELL.', async () => {
+        const { data: group } = await supabase.from('groups').select('members, linked_hub_id').eq('id', groupId).single();
+        const newMembers = (group.members || []).filter(m => m !== currentProfile.id);
+
+        await supabase.from('groups').update({ members: newMembers }).eq('id', groupId);
+
+        if (group.linked_hub_id) {
+            const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', group.linked_hub_id);
+            if (bookings) {
+                for (const bk of bookings) {
+                    if ((bk.member_ids || []).includes(currentProfile.id)) {
+                        const newBKMems = bk.member_ids.filter(m => m !== currentProfile.id);
+                        await supabase.from('intelligence_booking').update({ member_ids: newBKMems }).eq('id', bk.id);
                     }
                 }
-                
-                activeGroupId = null;
-                showFeature('chat');
-                tacticalNotify('UNIT_EXITED // DISCONNECTED');
-            });
+            }
         }
 
-        async function viewMembers(groupId) {
-            const { data: group } = await supabase.from('groups').select('members, created_by, title').eq('id', groupId).single();
-            const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
-            const isCreator = group.created_by === currentProfile?.id;
+        activeGroupId = null;
+        showFeature('chat');
+        tacticalNotify('UNIT_EXITED // DISCONNECTED');
+    });
+}
 
-            const groupMembers = profiles.filter(p => (group.members || []).includes(p.id));
-            const nonMembers = profiles.filter(p => !(group.members || []).includes(p.id));
+async function viewMembers(groupId) {
+    const { data: group } = await supabase.from('groups').select('members, created_by, title').eq('id', groupId).single();
+    const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
+    const isCreator = group.created_by === currentProfile?.id;
 
-            const container = document.getElementById('membersListContainer');
+    const groupMembers = profiles.filter(p => (group.members || []).includes(p.id));
+    const nonMembers = profiles.filter(p => !(group.members || []).includes(p.id));
 
-            let html = groupMembers.map(p => `
+    const container = document.getElementById('membersListContainer');
+
+    let html = groupMembers.map(p => `
                 <div class="p-2 py-3 border-bottom d-flex align-items-center justify-content-between hover-bg-light transition">
                     <div class="d-flex align-items-center gap-3">
                         <div class="rounded-circle bg-dark d-flex align-items-center justify-content-center border border-2 border-dark" style="width: 32px; height: 32px; overflow: hidden;">
@@ -1214,8 +1483,8 @@ import { supabase } from './authen/auth.js';
                 </div>
             `).join('') || '<p class="text-center text-muted small p-4">NO MEMBERS LISTED</p>';
 
-            if (isCreator && nonMembers.length > 0) {
-                html += `
+    if (isCreator && nonMembers.length > 0) {
+        html += `
                     <div class="mt-3 p-3 bg-light border-start border-3 border-dark">
                         <p class="x-small fw-black text-uppercase mb-2 text-muted" style="letter-spacing: 1px;">ADD_OPERATIVE</p>
                         <select class="form-select form-select-sm minimal-input-sm x-small fw-bold text-uppercase" id="addGroupMemberSelect" onchange="addGroupMember('${groupId}', this.value)" style="font-size: 0.55rem;">
@@ -1224,95 +1493,95 @@ import { supabase } from './authen/auth.js';
                         </select>
                     </div>
                 `;
-            }
+    }
 
-            container.innerHTML = html;
-            window.tempGroupData[groupId] = group.members || [];
+    container.innerHTML = html;
+    window.tempGroupData[groupId] = group.members || [];
 
-            const modalEl = document.getElementById('groupMembersModal');
-            document.querySelector('#groupMembersModal h6').innerText = `UNIT_COMPOSITION // ${group.title.toUpperCase()}`;
-            
-            if (!modalEl.classList.contains('show')) {
-                new bootstrap.Modal(modalEl).show();
-            }
-        }
+    const modalEl = document.getElementById('groupMembersModal');
+    document.querySelector('#groupMembersModal h6').innerText = `UNIT_COMPOSITION // ${group.title.toUpperCase()}`;
 
-        window.removeGroupMember = async (groupId, userId) => {
-            const { data: group, error: fetchError } = await supabase.from('groups').select('members, linked_hub_id').eq('id', groupId).single();
-            if (fetchError) { tacticalNotify(`ERR: ${fetchError.message.toUpperCase()}`); return; }
-            
-            const mems = (group.members || []).filter(id => id !== userId);
-            
-            // 1. Update Group Members
-            const { error: groupError } = await supabase.from('groups').update({ members: mems }).eq('id', groupId);
-            if (groupError) { tacticalNotify(`KICK_ERR: ${groupError.message.toUpperCase()}`); console.error(groupError); return; }
-            
-            // 2. Clear from Recruitment Hub if linked (Actual Sync Remove)
-            if (group.linked_hub_id) {
-                const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', group.linked_hub_id);
-                if (bookings) {
-                    for (const bk of bookings) {
-                        const mIds = bk.member_ids || [];
-                        if (mIds.includes(userId)) {
-                            const newBKMems = mIds.filter(m => m !== userId);
-                            const { error: bkError } = await supabase.from('intelligence_booking').update({ member_ids: newBKMems }).eq('id', bk.id);
-                            if (bkError) console.error("Roster Sync Failure:", bkError);
-                        }
-                    }
+    if (!modalEl.classList.contains('show')) {
+        new bootstrap.Modal(modalEl).show();
+    }
+}
+
+window.removeGroupMember = async (groupId, userId) => {
+    const { data: group, error: fetchError } = await supabase.from('groups').select('members, linked_hub_id').eq('id', groupId).single();
+    if (fetchError) { tacticalNotify(`ERR: ${fetchError.message.toUpperCase()}`); return; }
+
+    const mems = (group.members || []).filter(id => id !== userId);
+
+    // 1. Update Group Members
+    const { error: groupError } = await supabase.from('groups').update({ members: mems }).eq('id', groupId);
+    if (groupError) { tacticalNotify(`KICK_ERR: ${groupError.message.toUpperCase()}`); console.error(groupError); return; }
+
+    // 2. Clear from Recruitment Hub if linked (Actual Sync Remove)
+    if (group.linked_hub_id) {
+        const { data: bookings } = await supabase.from('intelligence_booking').select('*').eq('hub_id', group.linked_hub_id);
+        if (bookings) {
+            for (const bk of bookings) {
+                const mIds = bk.member_ids || [];
+                if (mIds.includes(userId)) {
+                    const newBKMems = mIds.filter(m => m !== userId);
+                    const { error: bkError } = await supabase.from('intelligence_booking').update({ member_ids: newBKMems }).eq('id', bk.id);
+                    if (bkError) console.error("Roster Sync Failure:", bkError);
                 }
             }
+        }
+    }
 
-            viewMembers(groupId);
-            tacticalNotify('OPERATIVE_DISMISSED // SYNC_SUCCESS');
-        };
+    viewMembers(groupId);
+    tacticalNotify('OPERATIVE_DISMISSED // SYNC_SUCCESS');
+};
 
-        window.addGroupMember = async (groupId, userId) => {
-            if (!userId) return;
-            const mems = [...window.tempGroupData[groupId], userId];
-            await supabase.from('groups').update({ members: mems }).eq('id', groupId);
-            viewMembers(groupId);
-        };
+window.addGroupMember = async (groupId, userId) => {
+    if (!userId) return;
+    const mems = [...window.tempGroupData[groupId], userId];
+    await supabase.from('groups').update({ members: mems }).eq('id', groupId);
+    viewMembers(groupId);
+};
 
-        window.viewUserProfile = async (id = null) => {
-            let data;
-            if (!id || id === currentProfile.id) {
-                data = currentProfile;
-            } else {
-                const response = await supabase.from('profiles').select('*').eq('id', id).single();
-                data = response.data;
-            }
+window.viewUserProfile = async (id = null) => {
+    let data;
+    if (!id || id === currentProfile.id) {
+        data = currentProfile;
+    } else {
+        const response = await supabase.from('profiles').select('*').eq('id', id).single();
+        data = response.data;
+    }
 
-            if (!data) return;
+    if (!data) return;
 
-            document.getElementById('dossierCallsign').innerText = (data.callsign || 'OPERATIVE').toUpperCase();
-            document.getElementById('dossierID').innerText = `UID: ${data.id.substring(0, 8).toUpperCase()}`;
-            document.getElementById('dossierName').innerText = (data.first_name && data.last_name) ? `${data.first_name} ${data.last_name}`.toUpperCase() : 'UNKNOWN';
-            document.getElementById('dossierContact').innerText = data.telephone || 'NOT LISTED';
-            document.getElementById('dossierSchool').innerText = data.school || 'NOT ASSIGNED';
-            document.getElementById('dossierMajor').innerText = data.major || 'NOT ASSIGNED';
-            document.getElementById('dossierGrade').innerText = data.grade || 'GRADUATING';
+    document.getElementById('dossierCallsign').innerText = (data.callsign || 'OPERATIVE').toUpperCase();
+    document.getElementById('dossierID').innerText = `UID: ${data.id.substring(0, 8).toUpperCase()}`;
+    document.getElementById('dossierName').innerText = (data.first_name && data.last_name) ? `${data.first_name} ${data.last_name}`.toUpperCase() : 'UNKNOWN';
+    document.getElementById('dossierContact').innerText = data.telephone || 'NOT LISTED';
+    document.getElementById('dossierSchool').innerText = data.school || 'NOT ASSIGNED';
+    document.getElementById('dossierMajor').innerText = data.major || 'NOT ASSIGNED';
+    document.getElementById('dossierGrade').innerText = data.grade || 'GRADUATING';
 
-            const pic = document.getElementById('dossierPic');
-            pic.innerHTML = data.avatar_url ? `<img src="${data.avatar_url}" style="width:100%; height:100%; object-fit:cover;">` : `<i class="bi bi-person display-4 text-muted"></i>`;
+    const pic = document.getElementById('dossierPic');
+    pic.innerHTML = data.avatar_url ? `<img src="${data.avatar_url}" style="width:100%; height:100%; object-fit:cover;">` : `<i class="bi bi-person display-4 text-muted"></i>`;
 
-            // Fetch active deployments
-            const compsContainer = document.getElementById('dossierComps');
-            compsContainer.innerHTML = '<div class="x-small text-muted py-1 flex-center"><div class="spinner-border spinner-border-sm" style="width: 8px; height: 8px;"></div> SCANNING...</div>';
+    // Fetch active deployments
+    const compsContainer = document.getElementById('dossierComps');
+    compsContainer.innerHTML = '<div class="x-small text-muted py-1 flex-center"><div class="spinner-border spinner-border-sm" style="width: 8px; height: 8px;"></div> SCANNING...</div>';
 
-            const { data: bookings } = await supabase.from('intelligence_booking').select('team_name, hub_id').contains('member_ids', JSON.stringify([data.id]));
-            const { data: groups } = await supabase.from('groups').select('id, title, project_name').contains('members', JSON.stringify([data.id]));
-            const { data: ownedHubs } = await supabase.from('intelligence_hub').select('id, title, status, tags').eq('created_by', data.id);
+    const { data: bookings } = await supabase.from('intelligence_booking').select('team_name, hub_id').contains('member_ids', JSON.stringify([data.id]));
+    const { data: groups } = await supabase.from('groups').select('id, title, project_name').contains('members', JSON.stringify([data.id]));
+    const { data: ownedHubs } = await supabase.from('intelligence_hub').select('id, title, status, tags').eq('created_by', data.id);
 
-            let htmlString = '';
-            const displayedHubs = new Set();
+    let htmlString = '';
+    const displayedHubs = new Set();
 
-            // 1. Owned/Created Hubs
-            if (ownedHubs && ownedHubs.length > 0) {
-                htmlString += ownedHubs.map(hub => {
-                    displayedHubs.add(hub.id);
-                    const booking = (bookings || []).find(b => b.hub_id === hub.id);
-                    const stColor = hub.status === 'ACTIVE' ? 'success' : (hub.status === 'COMPLETED' ? 'secondary' : 'dark');
-                    return `
+    // 1. Owned/Created Hubs
+    if (ownedHubs && ownedHubs.length > 0) {
+        htmlString += ownedHubs.map(hub => {
+            displayedHubs.add(hub.id);
+            const booking = (bookings || []).find(b => b.hub_id === hub.id);
+            const stColor = hub.status === 'ACTIVE' ? 'success' : (hub.status === 'COMPLETED' ? 'secondary' : 'dark');
+            return `
                         <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1 hover-bg-light transition" style="border-left: 3px solid #ffc107 !important; cursor: pointer;" onclick="document.querySelector('#dossierModal .btn-close')?.click(); showFeature('news'); setTimeout(() => { const el = document.getElementById('news-card-${hub.id}'); if(el){ el.scrollIntoView({behavior: 'smooth', block: 'center'}); setTimeout(() => {el.children[0].style.boxShadow = '0 0 15px rgba(255,193,7,0.5)'; setTimeout(() => el.children[0].style.boxShadow = '', 2000);}, 300); } }, 300);" title="VIEW CREATED POST">
                             <div class="d-flex justify-content-between align-items-start">
                                 <span class="fw-black text-uppercase lh-sm text-decoration-underline" style="font-size: 0.65rem; letter-spacing: 0.5px;">PROJ: ${hub.title}</span>
@@ -1324,21 +1593,21 @@ import { supabase } from './authen/auth.js';
                             <span class="text-muted text-uppercase text-end" style="font-size: 0.45rem;">REF_${hub.id.substring(0, 4)}</span>
                         </div>
                     `;
-                }).join('');
-            }
+        }).join('');
+    }
 
-            // 2. Booked Hubs (Where they are members)
-            if (bookings && bookings.length > 0) {
-                const hubIds = [...new Set(bookings.map(b => b.hub_id))];
-                const { data: hubs } = await supabase.from('intelligence_hub').select('id, title, status, tags').in('id', hubIds);
-                
-                htmlString += bookings.map(b => {
-                    if (displayedHubs.has(b.hub_id)) return ''; // Skip if already shown as creator
-                    displayedHubs.add(b.hub_id);
-                    const hub = (hubs || []).find(h => h.id === b.hub_id);
-                    if (!hub) return '';
-                    const stColor = hub.status === 'ACTIVE' ? 'success' : (hub.status === 'COMPLETED' ? 'secondary' : 'dark');
-                    return `
+    // 2. Booked Hubs (Where they are members)
+    if (bookings && bookings.length > 0) {
+        const hubIds = [...new Set(bookings.map(b => b.hub_id))];
+        const { data: hubs } = await supabase.from('intelligence_hub').select('id, title, status, tags').in('id', hubIds);
+
+        htmlString += bookings.map(b => {
+            if (displayedHubs.has(b.hub_id)) return ''; // Skip if already shown as creator
+            displayedHubs.add(b.hub_id);
+            const hub = (hubs || []).find(h => h.id === b.hub_id);
+            if (!hub) return '';
+            const stColor = hub.status === 'ACTIVE' ? 'success' : (hub.status === 'COMPLETED' ? 'secondary' : 'dark');
+            return `
                         <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1 hover-bg-light transition" style="border-left: 3px solid #000 !important; cursor: pointer;" onclick="document.querySelector('#dossierModal .btn-close')?.click(); showFeature('news'); setTimeout(() => { const el = document.getElementById('news-card-${hub.id}'); if(el){ el.scrollIntoView({behavior: 'smooth', block: 'center'}); setTimeout(() => {el.children[0].style.boxShadow = '0 0 15px rgba(255,193,7,0.5)'; setTimeout(() => el.children[0].style.boxShadow = '', 2000);}, 300); } }, 300);" title="GOTO WORK GRID">
                             <div class="d-flex justify-content-between align-items-start">
                                 <span class="fw-black text-uppercase lh-sm text-decoration-underline" style="font-size: 0.65rem; letter-spacing: 0.5px;">PROJ: ${hub.title}</span>
@@ -1350,36 +1619,36 @@ import { supabase } from './authen/auth.js';
                             <span class="text-muted text-uppercase text-end" style="font-size: 0.45rem;">REF_${hub.id.substring(0, 4)}</span>
                         </div>
                     `;
-                }).join('');
-            }
+        }).join('');
+    }
 
-            // 3. Communications/Groups
-            if (groups && groups.length > 0) {
-                htmlString += groups.map(g => `
+    // 3. Communications/Groups
+    if (groups && groups.length > 0) {
+        htmlString += groups.map(g => `
                     <div class="p-2 px-3 bg-light border-start mb-2 d-flex flex-column gap-1 hover-bg-light transition" style="border-left: 3px solid #0d6efd !important; cursor: pointer;" onclick="document.querySelector('#dossierModal .btn-close')?.click(); showFeature('chat'); setTimeout(() => window.selectGroup('${g.id}', '${g.title.replace(/'/g, "\\'")}', '${(g.project_name || '').replace(/'/g, "\\'")}'), 300);" title="GOTO COMMS">
                         <span class="fw-black text-uppercase text-decoration-underline" style="font-size: 0.6rem; letter-spacing: 0.5px;">COMMS: ${g.title}</span>
                         <span class="text-muted" style="font-size: 0.5rem;">${g.project_name || 'GENERAL COMMS'}</span>
                     </div>
                 `).join('');
-            }
+    }
 
-            if (!htmlString.trim()) {
-                compsContainer.innerHTML = '<p class="m-0 x-small text-muted py-1 fst-italic">NO ACTIVE DEPLOYMENTS</p>';
-            } else {
-                compsContainer.innerHTML = htmlString;
-            }
+    if (!htmlString.trim()) {
+        compsContainer.innerHTML = '<p class="m-0 x-small text-muted py-1 fst-italic">NO ACTIVE DEPLOYMENTS</p>';
+    } else {
+        compsContainer.innerHTML = htmlString;
+    }
 
-            new bootstrap.Modal(document.getElementById('dossierModal')).show();
-        }
+    new bootstrap.Modal(document.getElementById('dossierModal')).show();
+}
 
-        let selectedMembersInfo = [];
-        async function loadUserSelection() {
-            const container = document.getElementById('userSelectionList');
-            if (!container) return;
-            const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
-            const renderList = (filter = '') => {
-                const filtered = profiles.filter(p => (p.callsign || '').toLowerCase().includes(filter.toLowerCase()));
-                container.innerHTML = filtered.map(p => `
+let selectedMembersInfo = [];
+async function loadUserSelection() {
+    const container = document.getElementById('userSelectionList');
+    if (!container) return;
+    const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
+    const renderList = (filter = '') => {
+        const filtered = profiles.filter(p => (p.callsign || '').toLowerCase().includes(filter.toLowerCase()));
+        container.innerHTML = filtered.map(p => `
                     <div class="user-select-item" onclick="toggleMember('${p.id}', '${p.callsign || 'OPERATIVE'}', '${p.avatar_url || ''}')">
                         <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center overflow-hidden" style="width: 25px; height: 25px;">
                             ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%; height:100%; object-fit:cover;">` : `<i class="bi bi-person small"></i>`}
@@ -1387,24 +1656,24 @@ import { supabase } from './authen/auth.js';
                         <span style="font-size: 0.7rem;" class="fw-bold text-uppercase">${p.callsign || 'OPERATIVE'}</span>
                     </div>
                 `).join('') || '<p class="text-center text-muted x-small p-2">NO MATCHES</p>';
-            };
-            document.getElementById('userSearchInput')?.addEventListener('input', (e) => renderList(e.target.value));
-            renderList();
-        }
+    };
+    document.getElementById('userSearchInput')?.addEventListener('input', (e) => renderList(e.target.value));
+    renderList();
+}
 
-        window.toggleMember = (id, callsign, avatar) => {
-            const existing = selectedMembersInfo.find(m => m.id === id);
-            if (!existing) {
-                selectedMembersInfo.push({ id, callsign, avatar });
-            } else {
-                selectedMembersInfo = selectedMembersInfo.filter(m => m.id !== id);
-            }
-            renderChips();
-        };
+window.toggleMember = (id, callsign, avatar) => {
+    const existing = selectedMembersInfo.find(m => m.id === id);
+    if (!existing) {
+        selectedMembersInfo.push({ id, callsign, avatar });
+    } else {
+        selectedMembersInfo = selectedMembersInfo.filter(m => m.id !== id);
+    }
+    renderChips();
+};
 
-        function renderChips() {
-            const area = document.getElementById('selectedMembersArea');
-            area.innerHTML = selectedMembersInfo.map(m => `
+function renderChips() {
+    const area = document.getElementById('selectedMembersArea');
+    area.innerHTML = selectedMembersInfo.map(m => `
                 <div class="member-chip py-1 px-2 mb-1" style="border-radius: 4px; background: #e9ecef; font-size: 0.6rem;">
                     <div class="d-flex align-items-center gap-1">
                         ${m.avatar ? `<img src="${m.avatar}" style="width: 15px; height: 15px; border-radius: 50%;">` : ''}
@@ -1413,17 +1682,17 @@ import { supabase } from './authen/auth.js';
                     </div>
                 </div>
             `).join('');
-        }
+}
 
-        // --- EVENT SHARE LOGIC ---
-        let eventSelectedMembersInfo = [];
-        async function loadEventUserSelection() {
-            const container = document.getElementById('eventUserSelectionList');
-            if (!container) return;
-            const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
-            const renderList = (filter = '') => {
-                const filtered = profiles.filter(p => (p.callsign || '').toLowerCase().includes(filter.toLowerCase()));
-                container.innerHTML = filtered.map(p => `
+// --- EVENT SHARE LOGIC ---
+let eventSelectedMembersInfo = [];
+async function loadEventUserSelection() {
+    const container = document.getElementById('eventUserSelectionList');
+    if (!container) return;
+    const { data: profiles } = await supabase.from('profiles').select('id, callsign, avatar_url');
+    const renderList = (filter = '') => {
+        const filtered = profiles.filter(p => (p.callsign || '').toLowerCase().includes(filter.toLowerCase()));
+        container.innerHTML = filtered.map(p => `
                     <div class="user-select-item" onclick="toggleEventMember('${p.id}', '${p.callsign || 'OPERATIVE'}', '${p.avatar_url || ''}')">
                         <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center overflow-hidden" style="width: 25px; height: 25px;">
                             ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%; height:100%; object-fit:cover;">` : `<i class="bi bi-person small"></i>`}
@@ -1431,25 +1700,25 @@ import { supabase } from './authen/auth.js';
                         <span style="font-size: 0.7rem;" class="fw-bold text-uppercase">${p.callsign || 'OPERATIVE'}</span>
                     </div>
                 `).join('') || '<p class="text-center text-muted x-small p-2">NO MATCHES</p>';
-            };
-            document.getElementById('eventUserSearchInput')?.addEventListener('input', (e) => renderList(e.target.value));
-            renderList();
-        }
+    };
+    document.getElementById('eventUserSearchInput')?.addEventListener('input', (e) => renderList(e.target.value));
+    renderList();
+}
 
-        window.toggleEventMember = (id, callsign, avatar) => {
-            const existing = eventSelectedMembersInfo.find(m => m.id === id);
-            if (!existing) {
-                eventSelectedMembersInfo.push({ id, callsign, avatar });
-            } else {
-                eventSelectedMembersInfo = eventSelectedMembersInfo.filter(m => m.id !== id);
-            }
-            renderEventChips();
-        };
+window.toggleEventMember = (id, callsign, avatar) => {
+    const existing = eventSelectedMembersInfo.find(m => m.id === id);
+    if (!existing) {
+        eventSelectedMembersInfo.push({ id, callsign, avatar });
+    } else {
+        eventSelectedMembersInfo = eventSelectedMembersInfo.filter(m => m.id !== id);
+    }
+    renderEventChips();
+};
 
-        function renderEventChips() {
-            const area = document.getElementById('eventSelectedMembersArea');
-            if (!area) return;
-            area.innerHTML = eventSelectedMembersInfo.map(m => `
+function renderEventChips() {
+    const area = document.getElementById('eventSelectedMembersArea');
+    if (!area) return;
+    area.innerHTML = eventSelectedMembersInfo.map(m => `
                 <div class="member-chip py-1 px-2 mb-1" style="border-radius: 4px; background: #e9ecef; font-size: 0.6rem;">
                     <div class="d-flex align-items-center gap-1">
                         ${m.avatar ? `<img src="${m.avatar}" style="width: 15px; height: 15px; border-radius: 50%;">` : ''}
@@ -1458,18 +1727,18 @@ import { supabase } from './authen/auth.js';
                     </div>
                 </div>
             `).join('');
-        }
+}
 
-        // --- COMMUNICATION HUB LOGIC ---
-        async function loadPersonnel() {
-            const usersList = document.getElementById('usersList');
-            if (!usersList) return;
-            const { data: profiles, error } = await supabase.from('profiles').select('*');
-            if (error) {
-                usersList.innerHTML = `<div class="text-center p-4 text-danger small">ERROR FETCHING PERSONNEL: ${error.message}</div>`;
-                return;
-            }
-            usersList.innerHTML = profiles.map(p => `
+// --- COMMUNICATION HUB LOGIC ---
+async function loadPersonnel() {
+    const usersList = document.getElementById('usersList');
+    if (!usersList) return;
+    const { data: profiles, error } = await supabase.from('profiles').select('*');
+    if (error) {
+        usersList.innerHTML = `<div class="text-center p-4 text-danger small">ERROR FETCHING PERSONNEL: ${error.message}</div>`;
+        return;
+    }
+    usersList.innerHTML = profiles.map(p => `
                 <div class="d-flex align-items-center justify-content-between p-3 mb-2 bg-white border rounded shadow-sm">
                     <div class="d-flex align-items-center gap-3">
                         <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; overflow: hidden;">
@@ -1483,361 +1752,361 @@ import { supabase } from './authen/auth.js';
                     <button class="btn btn-outline-dark btn-xs text-uppercase fw-bold px-3">Connect</button>
                 </div>
             `).join('');
-        }
+}
 
-        // --- CALENDAR LOGIC ---
-        function initCalendar() {
-            const calendarEl = document.getElementById('calendar');
-            if (calendarEl && !calendar) {
-                calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prevYear,prev,next,nextYear today',
-                        center: 'title',
-                        right: 'multiMonthYear,dayGridMonth,listMonth'
-                    },
-                    themeSystem: 'bootstrap5',
-                    selectable: true,
-                    dateClick: function (info) {
-                        const modal = new bootstrap.Modal(document.getElementById('addEventModal'));
-                        document.getElementById('eventStartDate').value = info.dateStr;
-                        modal.show();
-                    },
-                    eventClick: function (info) {
-                        const evt = info.event;
-                        const props = evt.extendedProps;
-                        document.getElementById('viewEventTitle').innerText = evt.title.toUpperCase();
-                        document.getElementById('viewEventID').innerText = `TAG: ${evt.id.substring(0, 8).toUpperCase()}`;
-                        document.getElementById('viewEventScope').innerText = props.scope || 'PERSONAL';
-                        document.getElementById('viewEventDescription').innerText = props.description || 'NO ADDITIONAL NOTES';
-                        const start = evt.start ? new Date(evt.start).toLocaleString() : '--';
-                        document.getElementById('viewEventTime').innerText = evt.allDay ? `${evt.startStr}` : `${start}`;
-                        const taskArea = document.getElementById('viewEventTaskStatus');
-                        taskArea.innerHTML = props.is_task ? '<span class="badge bg-warning text-dark rounded-0 px-2 py-1" style="font-size:0.5rem">HIGH PRIORITY TASK</span>' : '';
-                        const adminActions = document.getElementById('eventAdminActions');
-                        if (props.created_by === currentProfile?.id) {
-                            adminActions.classList.remove('d-none');
-                            document.getElementById('editEventBtn').onclick = () => {
-                                bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
-                                document.getElementById('eventId').value = evt.id;
-                                document.getElementById('eventTitle').value = evt.title;
-                                document.getElementById('eventScope').value = props.scope || 'personal';
-                                document.getElementById('eventIsTask').checked = props.is_task || false;
-                                document.getElementById('eventDescription').value = props.description || '';
+// --- CALENDAR LOGIC ---
+function initCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl && !calendar) {
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prevYear,prev,next,nextYear today',
+                center: 'title',
+                right: 'multiMonthYear,dayGridMonth,listMonth'
+            },
+            themeSystem: 'bootstrap5',
+            selectable: true,
+            dateClick: function (info) {
+                const modal = new bootstrap.Modal(document.getElementById('addEventModal'));
+                document.getElementById('eventStartDate').value = info.dateStr;
+                modal.show();
+            },
+            eventClick: function (info) {
+                const evt = info.event;
+                const props = evt.extendedProps;
+                document.getElementById('viewEventTitle').innerText = evt.title.toUpperCase();
+                document.getElementById('viewEventID').innerText = `TAG: ${evt.id.substring(0, 8).toUpperCase()}`;
+                document.getElementById('viewEventScope').innerText = props.scope || 'PERSONAL';
+                document.getElementById('viewEventDescription').innerText = props.description || 'NO ADDITIONAL NOTES';
+                const start = evt.start ? new Date(evt.start).toLocaleString() : '--';
+                document.getElementById('viewEventTime').innerText = evt.allDay ? `${evt.startStr}` : `${start}`;
+                const taskArea = document.getElementById('viewEventTaskStatus');
+                taskArea.innerHTML = props.is_task ? '<span class="badge bg-warning text-dark rounded-0 px-2 py-1" style="font-size:0.5rem">HIGH PRIORITY TASK</span>' : '';
+                const adminActions = document.getElementById('eventAdminActions');
+                if (props.created_by === currentProfile?.id) {
+                    adminActions.classList.remove('d-none');
+                    document.getElementById('editEventBtn').onclick = () => {
+                        bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
+                        document.getElementById('eventId').value = evt.id;
+                        document.getElementById('eventTitle').value = evt.title;
+                        document.getElementById('eventScope').value = props.scope || 'personal';
+                        document.getElementById('eventIsTask').checked = props.is_task || false;
+                        document.getElementById('eventDescription').value = props.description || '';
 
-                                if (evt.start) {
-                                    document.getElementById('eventStartDate').value = new Date(evt.start).toISOString().split('T')[0];
-                                    if (!evt.allDay) document.getElementById('eventStartTime').value = new Date(evt.start).toTimeString().substring(0, 5);
-                                }
-                                if (evt.end) {
-                                    document.getElementById('eventEndDate').value = new Date(evt.end).toISOString().split('T')[0];
-                                    if (!evt.allDay) document.getElementById('eventEndTime').value = new Date(evt.end).toTimeString().substring(0, 5);
-                                }
+                        if (evt.start) {
+                            document.getElementById('eventStartDate').value = new Date(evt.start).toISOString().split('T')[0];
+                            if (!evt.allDay) document.getElementById('eventStartTime').value = new Date(evt.start).toTimeString().substring(0, 5);
+                        }
+                        if (evt.end) {
+                            document.getElementById('eventEndDate').value = new Date(evt.end).toISOString().split('T')[0];
+                            if (!evt.allDay) document.getElementById('eventEndTime').value = new Date(evt.end).toTimeString().substring(0, 5);
+                        }
 
-                                document.getElementById('addEventModalTitle').innerText = 'UPDATE MISSION ENTRY';
-                                document.getElementById('addEventSubmitBtn').innerText = 'SAVE CHANGES';
+                        document.getElementById('addEventModalTitle').innerText = 'UPDATE MISSION ENTRY';
+                        document.getElementById('addEventSubmitBtn').innerText = 'SAVE CHANGES';
 
-                                // Fetch current shared members
-                                if (props.shared_with && props.shared_with.length > 0) {
-                                    supabase.from('profiles')
-                                        .select('id, callsign, avatar_url')
-                                        .in('id', props.shared_with)
-                                        .then(({ data: sharedUsers }) => {
-                                            if (sharedUsers) {
-                                                eventSelectedMembersInfo = sharedUsers;
-                                                renderEventChips();
-                                            }
-                                        });
-                                } else {
-                                    eventSelectedMembersInfo = [];
-                                    renderEventChips();
-                                }
-
-                                new bootstrap.Modal(document.getElementById('addEventModal')).show();
-                            };
-
-                            // Inline Deletion Logic
-                            document.getElementById('deleteEventBtn').onclick = () => {
-                                document.getElementById('eventAdminActions').classList.add('d-none');
-                                document.getElementById('deleteConfirmActions').classList.remove('d-none');
-                                document.getElementById('closeEventViewBtn').classList.add('d-none');
-                            };
-
-                            document.getElementById('cancelDeleteEventBtn').onclick = () => {
-                                document.getElementById('deleteConfirmActions').classList.add('d-none');
-                                document.getElementById('eventAdminActions').classList.remove('d-none');
-                                document.getElementById('closeEventViewBtn').classList.remove('d-none');
-                            };
-
-                            document.getElementById('confirmDeleteEventBtn').onclick = async () => {
-                                const { error } = await supabase.from('calendar_events').delete().eq('id', evt.id);
-                                if (!error) {
-                                    bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
-                                    calendar?.refetchEvents();
-                                    tacticalNotify('MISSION REMOVED');
-                                } else {
-                                    tacticalNotify('ERROR: ' + error.message);
-                                }
-                            };
+                        // Fetch current shared members
+                        if (props.shared_with && props.shared_with.length > 0) {
+                            supabase.from('profiles')
+                                .select('id, callsign, avatar_url')
+                                .in('id', props.shared_with)
+                                .then(({ data: sharedUsers }) => {
+                                    if (sharedUsers) {
+                                        eventSelectedMembersInfo = sharedUsers;
+                                        renderEventChips();
+                                    }
+                                });
                         } else {
-                            adminActions.classList.add('d-none');
+                            eventSelectedMembersInfo = [];
+                            renderEventChips();
                         }
 
-                        // Reset view state when opening
-                        document.getElementById('deleteConfirmActions').classList.add('d-none');
-                        document.getElementById('closeEventViewBtn').classList.remove('d-none');
-
-                        new bootstrap.Modal(document.getElementById('viewEventModal')).show();
-                    },
-                    events: async (info, successCallback, failureCallback) => {
-                        const isTasksOnly = document.getElementById('viewTasksOnly')?.checked;
-                        const isPersonalOnly = document.getElementById('scopePersonalMain')?.checked;
-
-                        const { data, error } = await supabase.from('calendar_events').select('*');
-                        if (error) successCallback([]);
-                        else {
-                            const uid = currentProfile?.id;
-                            let filtered = data.filter(e =>
-                                e.scope === 'global' ||
-                                e.created_by === uid ||
-                                (e.shared_with && e.shared_with.includes(uid))
-                            );
-
-                            if (isPersonalOnly) {
-                                filtered = filtered.filter(e => e.scope !== 'global' || e.created_by === uid);
-                            } else {
-                                // If Global radio is selected, we show all (Global + Personal)
-                            }
-
-                            if (isTasksOnly) filtered = filtered.filter(e => e.is_task);
-                            successCallback(filtered);
-                        }
-                    },
-                    eventDidMount: function (info) {
-                        if (info.event.extendedProps.is_task) info.el.style.borderLeft = '4px solid #ffc107';
-                        if (info.event.extendedProps.scope === 'global') {
-                            info.el.style.backgroundColor = '#000';
-                            info.el.style.borderColor = '#000';
-                        }
-                    }
-                });
-                calendar.render();
-
-                // View Toggles
-                document.getElementById('viewGridBtn')?.addEventListener('click', () => {
-                    calendar.changeView('dayGridMonth');
-                    document.getElementById('viewGridBtn').classList.add('active');
-                    document.getElementById('viewListBtn').classList.remove('active');
-                });
-                document.getElementById('viewListBtn')?.addEventListener('click', () => {
-                    calendar.changeView('listMonth');
-                    document.getElementById('viewListBtn').classList.add('active');
-                    document.getElementById('viewGridBtn').classList.remove('active');
-                });
-                document.getElementById('viewTasksOnly')?.addEventListener('change', () => calendar.refetchEvents());
-                document.getElementById('scopeGlobalMain')?.addEventListener('change', () => calendar.refetchEvents());
-                document.getElementById('scopePersonalMain')?.addEventListener('change', () => calendar.refetchEvents());
-            }
-        }
-
-
-
-        // --- GLOBAL TRIGGERS ---
-        document.getElementById('homeBtn')?.addEventListener('click', () => toggleFeature('home'));
-        document.getElementById('chatBtn')?.addEventListener('click', () => toggleFeature('chat'));
-        document.getElementById('calendarBtn')?.addEventListener('click', () => toggleFeature('calendar'));
-        document.getElementById('newsBtn')?.addEventListener('click', () => toggleFeature('news'));
-        document.getElementById('classBtn')?.addEventListener('click', () => toggleFeature('class'));
-
-        const groupForm = document.getElementById('newGroupFormGeneral');
-        if (groupForm) {
-            groupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const title = document.getElementById('groupTitleMain').value;
-                const projectName = document.getElementById('groupProjectMain').value;
-                const linkedHubId = document.getElementById('groupLinkedHubId').value || null;
-                const memberIds = selectedMembersInfo.map(m => m.id);
-
-                // Ensure creator is always in the group
-                if (!memberIds.includes(currentProfile.id)) {
-                    memberIds.push(currentProfile.id);
-                }
-
-                const { error } = await supabase.from('groups').insert([{
-                    title,
-                    project_name: projectName,
-                    linked_hub_id: linkedHubId,
-                    members: memberIds,
-                    created_by: currentProfile.id
-                }]);
-
-                if (error) tacticalNotify('ERROR: ' + error.message);
-                else {
-                    bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
-                    groupForm.reset();
-                    selectedMembersInfo = [];
-                    renderChips();
-                    if (document.getElementById('groupsSidebarList')) loadGroups();
-                    tacticalNotify('UNIT INITIALIZED');
-                }
-            });
-        }
-
-        // Add Event logic
-        document.getElementById('addEventForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const eventId = document.getElementById('eventId').value;
-            const title = document.getElementById('eventTitle').value;
-            const startDate = document.getElementById('eventStartDate').value;
-            const endDate = document.getElementById('eventEndDate').value;
-            const startTime = document.getElementById('eventStartTime').value;
-            const endTime = document.getElementById('eventEndTime').value;
-            const scope = document.getElementById('eventScope').value;
-            const isTask = document.getElementById('eventIsTask').checked;
-            const description = document.getElementById('eventDescription').value;
-
-            let startISO = startDate;
-            if (startTime) {
-                startISO = new Date(`${startDate}T${startTime}`).toISOString();
-            }
-
-            let endISO = endDate || startDate;
-            if (endTime) {
-                endISO = new Date(`${endDate || startDate}T${endTime}`).toISOString();
-            } else if (endDate && !endTime) {
-                const d = new Date(endDate);
-                d.setDate(d.getDate() + 1);
-                endISO = d.toISOString().split('T')[0];
-            }
-
-            const memberIds = eventSelectedMembersInfo.map(m => m.id);
-
-            const newEvent = {
-                title,
-                start: startISO,
-                end: endISO !== startISO ? endISO : null,
-                scope,
-                is_task: isTask,
-                shared_with: memberIds,
-                description: description
-            };
-
-            let reqError = null;
-            if (eventId) {
-                const { error } = await supabase.from('calendar_events').update(newEvent).eq('id', eventId);
-                reqError = error;
-            } else {
-                newEvent.created_by = currentProfile?.id;
-                const { error } = await supabase.from('calendar_events').insert([newEvent]);
-                reqError = error;
-            }
-
-            if (reqError) {
-                tacticalNotify('ERROR: ' + reqError.message);
-            } else {
-                bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
-                e.target.reset();
-                document.getElementById('eventId').value = '';
-                eventSelectedMembersInfo = [];
-                renderEventChips();
-                // Reset button/title in case it was Edit
-                document.getElementById('addEventModalTitle').innerText = 'CALENDAR ENTRY / MISSION PLAN';
-                document.getElementById('addEventSubmitBtn').innerText = 'COMMIT TO MISSION BOARD';
-
-                calendar?.refetchEvents();
-                tacticalNotify(eventId ? 'MISSION UPDATED' : 'MISSION BOARD UPDATED');
-            }
-        });
-
-        // Handle Profile Update
-        const editProfileForm = document.getElementById('editProfileForm');
-        if (editProfileForm) {
-            editProfileForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const saveStatus = document.getElementById('saveStatus');
-                saveStatus.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> UPLOADING...';
-                saveStatus.className = 'small text-primary tracking-wider text-uppercase';
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) throw new Error('Authentication failed');
-                    let avatarUrl = currentProfile ? currentProfile.avatar_url : null;
-                    if (selectedFile) {
-                        const fileExt = selectedFile.name.split('.').pop();
-                        const fileName = `${Math.random()}.${fileExt}`;
-                        const filePath = `${user.id}/${fileName}`;
-                        const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedFile);
-                        if (uploadError) throw uploadError;
-                        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-                        avatarUrl = publicUrl;
-                    }
-                    const updatedData = {
-                        id: user.id,
-                        first_name: document.getElementById('edit-first-name').value,
-                        last_name: document.getElementById('edit-last-name').value,
-                        nickname: document.getElementById('edit-nickname').value,
-                        callsign: document.getElementById('edit-callsign').value,
-                        telephone: document.getElementById('edit-telephone').value,
-                        school: document.getElementById('edit-school').value,
-                        grade: document.getElementById('edit-grade').value,
-                        major: document.getElementById('edit-major').value,
-                        birthdate: document.getElementById('edit-birthdate').value,
-                        avatar_url: avatarUrl,
-                        updated_at: new Date()
+                        new bootstrap.Modal(document.getElementById('addEventModal')).show();
                     };
-                    const { error: updateError } = await supabase.from('profiles').upsert(updatedData);
-                    if (updateError) throw updateError;
-                    saveStatus.innerHTML = '<i class="bi bi-check2-all"></i> DOSSIER SYNCHRONIZED';
-                    saveStatus.className = 'small text-success tracking-wider text-uppercase';
-                    setTimeout(() => {
-                        bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
-                        loadUserInfo();
-                        saveStatus.innerHTML = '<i class="bi bi-cpu me-2"></i> READY';
-                        saveStatus.className = 'small text-muted opacity-50 tracking-wider text-uppercase';
-                    }, 1500);
-                } catch (error) {
-                    console.error('Update failed:', error);
-                    saveStatus.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ERROR: ${error.message}`;
-                    saveStatus.className = 'small text-danger tracking-wider text-uppercase';
+
+                    // Inline Deletion Logic
+                    document.getElementById('deleteEventBtn').onclick = () => {
+                        document.getElementById('eventAdminActions').classList.add('d-none');
+                        document.getElementById('deleteConfirmActions').classList.remove('d-none');
+                        document.getElementById('closeEventViewBtn').classList.add('d-none');
+                    };
+
+                    document.getElementById('cancelDeleteEventBtn').onclick = () => {
+                        document.getElementById('deleteConfirmActions').classList.add('d-none');
+                        document.getElementById('eventAdminActions').classList.remove('d-none');
+                        document.getElementById('closeEventViewBtn').classList.remove('d-none');
+                    };
+
+                    document.getElementById('confirmDeleteEventBtn').onclick = async () => {
+                        const { error } = await supabase.from('calendar_events').delete().eq('id', evt.id);
+                        if (!error) {
+                            bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
+                            calendar?.refetchEvents();
+                            tacticalNotify('MISSION REMOVED');
+                        } else {
+                            tacticalNotify('ERROR: ' + error.message);
+                        }
+                    };
+                } else {
+                    adminActions.classList.add('d-none');
                 }
-            });
-        }
 
-        // --- UTILITY FUNCTIONS ---
-        window.tacticalNotify = (msg) => {
-            const toast = document.createElement('div');
-            toast.className = 'tactical-toast px-4 py-2 border border-dark bg-black text-white fw-bold tracking-widest text-uppercase shadow-lg';
-            toast.style = 'position:fixed; bottom:20px; right:20px; z-index:9999; font-size:0.6rem; animation: slideIn 0.3s ease forwards;';
-            toast.innerHTML = `<i class="bi bi-cpu me-2 text-warning"></i> ${msg}`;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease forwards';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        };
+                // Reset view state when opening
+                document.getElementById('deleteConfirmActions').classList.add('d-none');
+                document.getElementById('closeEventViewBtn').classList.remove('d-none');
 
+                new bootstrap.Modal(document.getElementById('viewEventModal')).show();
+            },
+            events: async (info, successCallback, failureCallback) => {
+                const isTasksOnly = document.getElementById('viewTasksOnly')?.checked;
+                const isPersonalOnly = document.getElementById('scopePersonalMain')?.checked;
 
+                const { data, error } = await supabase.from('calendar_events').select('*');
+                if (error) successCallback([]);
+                else {
+                    const uid = currentProfile?.id;
+                    let filtered = data.filter(e =>
+                        e.scope === 'global' ||
+                        e.created_by === uid ||
+                        (e.shared_with && e.shared_with.includes(uid))
+                    );
 
-        // Call global sync init
-        initRealtimeSync();
+                    if (isPersonalOnly) {
+                        filtered = filtered.filter(e => e.scope !== 'global' || e.created_by === uid);
+                    } else {
+                        // If Global radio is selected, we show all (Global + Personal)
+                    }
 
-        async function initRealtimeSync() {
-            // One-time group sync
-            supabase.channel('global-groups-channel')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
-                    if (chatInitialized) loadGroups();
-                })
-                .subscribe();
-        }
-
-        // --- INITIALIZATION ---
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                console.log('SESSION_ACTIVE:', event);
-                loadUserInfo();
-            } else if (event === 'SIGNED_OUT') {
-                window.location.href = 'authen/login.html';
+                    if (isTasksOnly) filtered = filtered.filter(e => e.is_task);
+                    successCallback(filtered);
+                }
+            },
+            eventDidMount: function (info) {
+                if (info.event.extendedProps.is_task) info.el.style.borderLeft = '4px solid #ffc107';
+                if (info.event.extendedProps.scope === 'global') {
+                    info.el.style.backgroundColor = '#000';
+                    info.el.style.borderColor = '#000';
+                }
             }
         });
+        calendar.render();
 
-        // Trigger initial check
+        // View Toggles
+        document.getElementById('viewGridBtn')?.addEventListener('click', () => {
+            calendar.changeView('dayGridMonth');
+            document.getElementById('viewGridBtn').classList.add('active');
+            document.getElementById('viewListBtn').classList.remove('active');
+        });
+        document.getElementById('viewListBtn')?.addEventListener('click', () => {
+            calendar.changeView('listMonth');
+            document.getElementById('viewListBtn').classList.add('active');
+            document.getElementById('viewGridBtn').classList.remove('active');
+        });
+        document.getElementById('viewTasksOnly')?.addEventListener('change', () => calendar.refetchEvents());
+        document.getElementById('scopeGlobalMain')?.addEventListener('change', () => calendar.refetchEvents());
+        document.getElementById('scopePersonalMain')?.addEventListener('change', () => calendar.refetchEvents());
+    }
+}
+
+
+
+// --- GLOBAL TRIGGERS ---
+document.getElementById('homeBtn')?.addEventListener('click', () => toggleFeature('home'));
+document.getElementById('chatBtn')?.addEventListener('click', () => toggleFeature('chat'));
+document.getElementById('calendarBtn')?.addEventListener('click', () => toggleFeature('calendar'));
+document.getElementById('newsBtn')?.addEventListener('click', () => toggleFeature('news'));
+document.getElementById('classBtn')?.addEventListener('click', () => toggleFeature('class'));
+
+const groupForm = document.getElementById('newGroupFormGeneral');
+if (groupForm) {
+    groupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('groupTitleMain').value;
+        const projectName = document.getElementById('groupProjectMain').value;
+        const linkedHubId = document.getElementById('groupLinkedHubId').value || null;
+        const memberIds = selectedMembersInfo.map(m => m.id);
+
+        // Ensure creator is always in the group
+        if (!memberIds.includes(currentProfile.id)) {
+            memberIds.push(currentProfile.id);
+        }
+
+        const { error } = await supabase.from('groups').insert([{
+            title,
+            project_name: projectName,
+            linked_hub_id: linkedHubId,
+            members: memberIds,
+            created_by: currentProfile.id
+        }]);
+
+        if (error) tacticalNotify('ERROR: ' + error.message);
+        else {
+            bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
+            groupForm.reset();
+            selectedMembersInfo = [];
+            renderChips();
+            if (document.getElementById('groupsSidebarList')) loadGroups();
+            tacticalNotify('UNIT INITIALIZED');
+        }
+    });
+}
+
+// Add Event logic
+document.getElementById('addEventForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const eventId = document.getElementById('eventId').value;
+    const title = document.getElementById('eventTitle').value;
+    const startDate = document.getElementById('eventStartDate').value;
+    const endDate = document.getElementById('eventEndDate').value;
+    const startTime = document.getElementById('eventStartTime').value;
+    const endTime = document.getElementById('eventEndTime').value;
+    const scope = document.getElementById('eventScope').value;
+    const isTask = document.getElementById('eventIsTask').checked;
+    const description = document.getElementById('eventDescription').value;
+
+    let startISO = startDate;
+    if (startTime) {
+        startISO = new Date(`${startDate}T${startTime}`).toISOString();
+    }
+
+    let endISO = endDate || startDate;
+    if (endTime) {
+        endISO = new Date(`${endDate || startDate}T${endTime}`).toISOString();
+    } else if (endDate && !endTime) {
+        const d = new Date(endDate);
+        d.setDate(d.getDate() + 1);
+        endISO = d.toISOString().split('T')[0];
+    }
+
+    const memberIds = eventSelectedMembersInfo.map(m => m.id);
+
+    const newEvent = {
+        title,
+        start: startISO,
+        end: endISO !== startISO ? endISO : null,
+        scope,
+        is_task: isTask,
+        shared_with: memberIds,
+        description: description
+    };
+
+    let reqError = null;
+    if (eventId) {
+        const { error } = await supabase.from('calendar_events').update(newEvent).eq('id', eventId);
+        reqError = error;
+    } else {
+        newEvent.created_by = currentProfile?.id;
+        const { error } = await supabase.from('calendar_events').insert([newEvent]);
+        reqError = error;
+    }
+
+    if (reqError) {
+        tacticalNotify('ERROR: ' + reqError.message);
+    } else {
+        bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+        e.target.reset();
+        document.getElementById('eventId').value = '';
+        eventSelectedMembersInfo = [];
+        renderEventChips();
+        // Reset button/title in case it was Edit
+        document.getElementById('addEventModalTitle').innerText = 'CALENDAR ENTRY / MISSION PLAN';
+        document.getElementById('addEventSubmitBtn').innerText = 'COMMIT TO MISSION BOARD';
+
+        calendar?.refetchEvents();
+        tacticalNotify(eventId ? 'MISSION UPDATED' : 'MISSION BOARD UPDATED');
+    }
+});
+
+// Handle Profile Update
+const editProfileForm = document.getElementById('editProfileForm');
+if (editProfileForm) {
+    editProfileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveStatus = document.getElementById('saveStatus');
+        saveStatus.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> UPLOADING...';
+        saveStatus.className = 'small text-primary tracking-wider text-uppercase';
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Authentication failed');
+            let avatarUrl = currentProfile ? currentProfile.avatar_url : null;
+            if (selectedFile) {
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `${user.id}/${fileName}`;
+                const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedFile);
+                if (uploadError) throw uploadError;
+                const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                avatarUrl = publicUrl;
+            }
+            const updatedData = {
+                id: user.id,
+                first_name: document.getElementById('edit-first-name').value,
+                last_name: document.getElementById('edit-last-name').value,
+                nickname: document.getElementById('edit-nickname').value,
+                callsign: document.getElementById('edit-callsign').value,
+                telephone: document.getElementById('edit-telephone').value,
+                school: document.getElementById('edit-school').value,
+                grade: document.getElementById('edit-grade').value,
+                major: document.getElementById('edit-major').value,
+                birthdate: document.getElementById('edit-birthdate').value,
+                avatar_url: avatarUrl,
+                updated_at: new Date()
+            };
+            const { error: updateError } = await supabase.from('profiles').upsert(updatedData);
+            if (updateError) throw updateError;
+            saveStatus.innerHTML = '<i class="bi bi-check2-all"></i> DOSSIER SYNCHRONIZED';
+            saveStatus.className = 'small text-success tracking-wider text-uppercase';
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+                loadUserInfo();
+                saveStatus.innerHTML = '<i class="bi bi-cpu me-2"></i> READY';
+                saveStatus.className = 'small text-muted opacity-50 tracking-wider text-uppercase';
+            }, 1500);
+        } catch (error) {
+            console.error('Update failed:', error);
+            saveStatus.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ERROR: ${error.message}`;
+            saveStatus.className = 'small text-danger tracking-wider text-uppercase';
+        }
+    });
+}
+
+// --- UTILITY FUNCTIONS ---
+window.tacticalNotify = (msg) => {
+    const toast = document.createElement('div');
+    toast.className = 'tactical-toast px-4 py-2 border border-dark bg-black text-white fw-bold tracking-widest text-uppercase shadow-lg';
+    toast.style = 'position:fixed; bottom:20px; right:20px; z-index:9999; font-size:0.6rem; animation: slideIn 0.3s ease forwards;';
+    toast.innerHTML = `<i class="bi bi-cpu me-2 text-warning"></i> ${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
+
+
+
+// Call global sync init
+initRealtimeSync();
+
+async function initRealtimeSync() {
+    // One-time group sync
+    supabase.channel('global-groups-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
+            if (chatInitialized) loadGroups();
+        })
+        .subscribe();
+}
+
+// --- INITIALIZATION ---
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        console.log('SESSION_ACTIVE:', event);
         loadUserInfo();
+    } else if (event === 'SIGNED_OUT') {
+        window.location.href = 'authen/login.html';
+    }
+});
+
+// Trigger initial check
+loadUserInfo();

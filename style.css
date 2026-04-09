@@ -595,6 +595,79 @@ body {
     height: 600px;
 }
 
+/* Faculty Selection UI */
+.faculty-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-width: 1px !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.faculty-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    border-color: #000 !important;
+}
+
+.faculty-card.bg-dark {
+    border-color: var(--bs-warning) !important;
+}
+
+.faculty-card i {
+    transition: transform 0.3s ease;
+}
+
+.faculty-card:hover i {
+    transform: scale(1.1);
+}
+
+.card-major-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='currentColor' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+    padding-right: 15px !important;
+}
+
+.faculty-card.bg-dark .card-major-select {
+    color: #fff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+}
+
+.card-major-select option {
+    background-color: #fff !important;
+    color: #000 !important;
+}
+
+.deploy-btn {
+    font-size: 0.45rem;
+    letter-spacing: 1.5px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+    border: 1px solid currentColor;
+}
+
+.faculty-card.bg-dark .deploy-btn {
+    border-color: var(--bs-warning) !important;
+    color: var(--bs-warning) !important;
+}
+
+.faculty-card.bg-dark .deploy-btn:hover {
+    background: var(--bs-warning);
+    color: #000 !important;
+}
+
+.faculty-card.bg-dark .btn-outline-dark {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    color: #fff !important;
+}
+
+.faculty-card.bg-dark .btn-outline-dark:hover {
+    background: #fff;
+    color: #000 !important;
+}
+
 .chat-sidebar {
     width: 300px;
     border-right: 1px solid var(--border-color);
@@ -1314,8 +1387,26 @@ body {
 }
 
 /* Feature Specific Tweak */
-#newsContainer, #eventCardsContainer {
-    animation: fadeIn 0.5s ease;
+.spec-section label {
+    color: #000 !important;
+    opacity: 0.4;
+}
+
+.underline {
+    text-decoration: underline;
+}
+
+#modalScoresContainer div {
+    transition: all 0.2s ease;
+}
+
+#modalScoresContainer div:hover {
+    background: rgba(0, 0, 0, 0.02);
+    padding-left: 4px;
+}
+
+.border-dashed {
+    border-style: dashed !important;
 }
 
 .shadow-pulse {
@@ -1358,6 +1449,34 @@ body {
     background-color: #f8f9fa !important;
 }
 
+/* --- UNIT BRICK STYLES --- */
+.unit-brick {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.unit-brick:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
+    border-color: #000 !important;
+}
+
+.hover-bg-danger:hover {
+    background-color: #ff4d4d !important;
+}
+
+.hover-bg-danger:hover i {
+    color: white !important;
+}
+
+.remove-brick {
+    background: transparent;
+}
+
+.unit-brick .fw-black {
+    min-width: 45px;
+    text-align: center;
+}
+
 .fw-black {
     font-weight: 900 !important;
 }
@@ -1376,6 +1495,23 @@ body {
     background-color: #000;
 }
 
+/* TACTICAL HEARTBEAT Indicator */
+.heartbeat-dot {
+    width: 6px;
+    height: 6px;
+    background: #198754; 
+    border-radius: 50%;
+    animation: heartbeat-pulse 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat-pulse {
+    0% { transform: scale(1); opacity: 0.2; box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.2); }
+    50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 4px 2px rgba(25, 135, 84, 0.4); }
+    100% { transform: scale(1); opacity: 0.2; box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.2); }
+}
+
+.tracking-widest { letter-spacing: 2.5px; }
+
 .msg-text {
     word-wrap: break-word;
     white-space: pre-wrap;
@@ -1387,11 +1523,18 @@ body {
 }
 
 @keyframes slideDown {
-    from { transform: translateY(-10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .tactical-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
 }
