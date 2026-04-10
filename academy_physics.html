@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSICS LAB // Tactical Intelligence Briefing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --hecker-black: #000000;
+            --hecker-red: #d90429;
+            --hecker-gray: #f8f9fa;
+        }
+        
+        body {
+            background-color: var(--hecker-gray);
+            font-family: 'LINE Seed Sans TH', 'Inter', sans-serif;
+        }
+
+        .lab-header {
+            background: #fff;
+            border-bottom: 2px solid var(--hecker-black);
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .accordion-button::after {
+            filter: grayscale(1);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 300px;
+            background-color: #ffffff;
+            border: 1px solid #000000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tactical-input-group .input-group-text {
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            font-weight: 900;
+            font-size: 0.7rem;
+            min-width: 40px;
+            justify-content: center;
+        }
+
+        .tactical-input-group .form-control {
+            border: 1px solid #000;
+            border-radius: 0;
+            font-size: 0.8rem;
+        }
+
+        .btn-xs {
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .tracking-widest { letter-spacing: 2px; }
+        .fw-black { font-weight: 900; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top lab-header py-3">
+        <div class="container">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-shield-lock-fill fs-4"></i>
+                <div class="d-flex flex-column">
+                    <span class="fw-black text-uppercase tracking-widest" style="font-size: 0.8rem;">Intelligence_Academy</span>
+                    <span class="text-muted text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Module: Physics_Tactical_Simulation</span>
+                </div>
+            </div>
+            <div class="ms-auto">
+                <a href="Lander.html" class="btn btn-outline-dark btn-xs rounded-0 px-4">Exit_Lab</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5 pb-5">
+        <div class="row justify-content-center mb-5">
+            <div class="col-lg-10 text-center">
+                <h1 class="fw-black text-uppercase mb-2" style="font-size: 2.5rem; letter-spacing: -1px;">Physics_Briefing_v2.0</h1>
+                <p class="text-muted text-uppercase tracking-widest" style="font-size: 0.7rem;">Interactive Tactical Modelling // Industrial Grade Laboratory</p>
+            </div>
+        </div>
+
+        <div class="accordion accordion-flush" id="physicsAccordion">
+
+            <!-- 1. KINEMATICS (SUVAT) -->
+            <div class="accordion-item border border-dark border-bottom-0 mb-3">
+                <h2 class="accordion-header">
+                    <button class="accordion-button fw-black text-uppercase tracking-widest" style="font-size: 0.8rem;" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSUVAT">
+                        01 // Kinematics [SUVAT_Engine]
+                    </button>
+                </h2>
+                <div id="collapseSUVAT" class="accordion-collapse collapse show" data-bs-parent="#physicsAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-4 text-start">
+                            <div class="col-md-5">
+                                <h6 class="fw-black text-uppercase text-danger mb-3" style="font-size: 0.7rem;">Field Calculation Protocols</h6>
+                                <ol class="text-muted small ps-3 mb-4">
+                                    <li>$v = u + at$ // Velocity check</li>
+                                    <li>$s = ut + \frac{1}{2}at^2$ // Displacement mapping</li>
+                                    <li>$v^2 = u^2 + 2as$ // Acceleration delta</li>
+                                    <li>$s = \left(\frac{u+v}{2}\right)t$ // Average velocity model</li>
+                                </ol>
+                                
+                                <div class="row g-2 mb-3 tactical-input-group">
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">U</span><input type="number" id="sim-suvat-u" class="form-control" placeholder="INIT_V"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">V</span><input type="number" id="sim-suvat-v" class="form-control" placeholder="FINAL_V"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">A</span><input type="number" id="sim-suvat-a" class="form-control" placeholder="ACCEL"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">S</span><input type="number" id="sim-suvat-s" class="form-control" placeholder="DISP"></div></div>
+                                    <div class="col-12"><div class="input-group input-group-sm"><span class="input-group-text">T</span><input type="number" id="sim-suvat-t" class="form-control" placeholder="TIME_SEC"></div></div>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input bg-dark border-dark" type="checkbox" role="switch" id="sim-freefall">
+                                    <label class="form-check-label small fw-bold text-uppercase" for="sim-freefall">Enable_Freefall_Mode (G=9.81)</label>
+                                </div>
+                                
+                                <button class="btn btn-outline-dark btn-xs w-100 mb-2 rounded-0" id="btn-suvat-add">Deploy_Object</button>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-dark btn-xs flex-fill rounded-0" id="btn-suvat-play">Run_Simulation</button>
+                                    <button class="btn btn-outline-secondary btn-xs flex-fill rounded-0" id="btn-suvat-stop">Abort</button>
+                                    <button class="btn btn-outline-danger btn-xs px-3 rounded-0" id="btn-suvat-clear"><i class="bi bi-trash"></i></button>
+                                </div>
+                                
+                                <div class="mt-4 p-3 border bg-white small" id="suvat-list">
+                                    <div class="text-muted text-center italic tracking-widest" style="font-size: 0.6rem;">// NO_OBJECTS_REGISTERED</div>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="canvas-container mb-3" style="height: 200px; background: #fafafa;">
+                                    <canvas id="canvas-suvat"></canvas>
+                                </div>
+                                <div class="canvas-container bg-white" style="height: 200px;">
+                                    <canvas id="canvas-suvat-graphs"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. DYNAMICS (NEWTON) -->
+            <div class="accordion-item border border-dark border-bottom-0 mb-3">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-black text-uppercase tracking-widest" style="font-size: 0.8rem;" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFBD">
+                        02 // Dynamics [Newton_FBD]
+                    </button>
+                </h2>
+                <div id="collapseFBD" class="accordion-collapse collapse" data-bs-parent="#physicsAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-4 text-start">
+                            <div class="col-md-5">
+                                <h6 class="fw-black text-uppercase text-danger mb-3" style="font-size: 0.7rem;">Vector Analysis Protocol</h6>
+                                <p class="text-muted small mb-3">Newton's 2nd Law ($\Sigma F = ma$): Net force dictates acceleration vectors.</p>
+                                <div class="tactical-input-group mb-4">
+                                    <div class="input-group input-group-sm"><span class="input-group-text w-50">MASS_M (KG)</span><input type="number" id="fbd-m" class="form-control" value="10"></div>
+                                </div>
+                                <hr class="border-dark opacity-10">
+                                <h6 class="fw-black text-uppercase mb-3" style="font-size: 0.6rem;">Force Deployment</h6>
+                                <div class="row g-2 mb-3 tactical-input-group">
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">F</span><input type="number" id="fbd-f" class="form-control" placeholder="NEWTONS"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">θ</span><input type="number" id="fbd-angle" class="form-control" placeholder="DEG"></div></div>
+                                </div>
+                                
+                                <button class="btn btn-outline-dark btn-xs w-100 mb-2 rounded-0" id="btn-fbd-add">Inject_Force_Vector</button>
+                                <div class="d-flex gap-2 mb-3">
+                                    <button class="btn btn-dark btn-xs flex-fill rounded-0" id="btn-fbd-play">Analyze</button>
+                                    <button class="btn btn-outline-danger btn-xs flex-fill rounded-0" id="btn-fbd-clear">Clear_All</button>
+                                </div>
+
+                                <div class="p-2 border bg-white small mb-3" id="fbd-list" style="max-height: 150px; overflow-y:auto;">
+                                     <div class="text-muted text-center tracking-widest" style="font-size: 0.6rem;">// NO_FORCES_DETECTED</div>
+                                </div>
+                                
+                                <div class="mt-4 p-3 bg-dark text-white rounded-0 small font-monospace">
+                                    <div class="d-flex justify-content-between"><span>NET_X:</span> <span id="fbd-sumx">0</span> N</div>
+                                    <div class="d-flex justify-content-between"><span>NET_Y:</span> <span id="fbd-sumy">0</span> N</div>
+                                    <div class="d-flex justify-content-between text-danger fw-bold"><span>NET_TOTAL:</span> <span><span id="fbd-net">0</span> N @ <span id="fbd-net-angle">0</span>°</span></div>
+                                    <div class="d-flex justify-content-between mt-2 border-top border-secondary pt-2"><span>ACCEL_A:</span> <span id="fbd-a">0</span> m/s²</div>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="canvas-container" style="height: 400px; background: #fff;">
+                                    <canvas id="canvas-fbd"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. PROJECTILE MOTION -->
+            <div class="accordion-item border border-dark border-bottom-0 mb-3">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-black text-uppercase tracking-widest" style="font-size: 0.8rem;" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProj">
+                        03 // Ballistics [Projectile_Motion]
+                    </button>
+                </h2>
+                <div id="collapseProj" class="accordion-collapse collapse" data-bs-parent="#physicsAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-4 text-start">
+                            <div class="col-md-5">
+                                <h6 class="fw-black text-uppercase text-danger mb-3" style="font-size: 0.7rem;">Orbital trajectory protocols</h6>
+                                <p class="text-muted small">Dual-axis independent movement. Constant horizontal velocity ($v_x$).</p>
+                                <div class="row g-2 mb-4 tactical-input-group">
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">U</span><input type="number" id="sim-pu" class="form-control" value="40"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">θ</span><input type="number" id="sim-angle" class="form-control" value="45"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">H0</span><input type="number" id="sim-h0" class="form-control" value="0"></div></div>
+                                    <div class="col-6"><div class="input-group input-group-sm"><span class="input-group-text">G</span><input type="number" id="sim-pg" class="form-control" value="9.81"></div></div>
+                                </div>
+                                
+                                <button class="btn btn-outline-dark btn-xs w-100 mb-2 rounded-0" id="btn-proj-add">Pre-load_Launch</button>
+                                <div class="d-flex gap-2 mb-3">
+                                    <button class="btn btn-dark btn-xs flex-fill rounded-0" id="btn-proj-play">Ignite_All</button>
+                                    <button class="btn btn-outline-danger btn-xs flex-fill rounded-0" id="btn-proj-clear">Purge</button>
+                                </div>
+
+                                <div class="p-3 border bg-white small" id="proj-list" style="max-height: 200px; overflow-y:auto;">
+                                    <div class="text-muted text-center tracking-widest" style="font-size: 0.6rem;">// NO_LAUNCH_DATA</div>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="canvas-container" style="height: 400px; background: #fafafa;">
+                                    <canvas id="canvas-proj"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. ENERGY CONSERVATION -->
+            <div class="accordion-item border border-dark mb-3">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-black text-uppercase tracking-widest" style="font-size: 0.8rem;" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnergy">
+                        04 // Thermodynamics [Energy_Briefing]
+                    </button>
+                </h2>
+                <div id="collapseEnergy" class="accordion-collapse collapse" data-bs-parent="#physicsAccordion">
+                    <div class="accordion-body">
+                        <div class="row g-4 text-start">
+                            <div class="col-md-5">
+                                <h6 class="fw-black text-uppercase text-danger mb-3" style="font-size: 0.7rem;">Entropy & Potential Analysis</h6>
+                                <p class="text-muted small">Total Energy ($E_T$) = Potential ($mgh$) + Kinetic ($\frac{1}{2}mv^2$).</p>
+                                <div class="row g-2 mb-4 tactical-input-group">
+                                    <div class="col-12"><div class="input-group input-group-sm"><span class="input-group-text w-50">MASS_M (KG)</span><input type="number" id="energy-m" class="form-control" value="10"></div></div>
+                                    <div class="col-12"><div class="input-group input-group-sm"><span class="input-group-text w-50">HEIGHT_H (M)</span><input type="number" id="energy-h" class="form-control" value="50"></div></div>
+                                </div>
+                                <div class="d-flex gap-2 mb-4">
+                                    <button class="btn btn-dark btn-xs flex-fill rounded-0" id="btn-energy-play">Initiate_Drop</button>
+                                    <button class="btn btn-outline-secondary btn-xs flex-fill rounded-0" id="btn-energy-stop">Freeze</button>
+                                </div>
+                                <div class="p-4 bg-dark text-white rounded-0 small font-monospace">
+                                    <div class="d-flex justify-content-between mb-1"><span>CURRENT_H:</span> <span id="en-h">50.0</span> m</div>
+                                    <div class="d-flex justify-content-between mb-3"><span>CURRENT_V:</span> <span id="en-v">0.0</span> m/s</div>
+                                    <div class="d-flex justify-content-between text-info"><span>POTENTIAL_EP:</span> <span id="en-ep">4905</span> J</div>
+                                    <div class="d-flex justify-content-between text-danger"><span>KINETIC_EK:</span> <span id="en-ek">0</span> J</div>
+                                    <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary fw-bold"><span>TOTAL_E:</span> <span id="en-total">4905</span> J</div>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="canvas-container" style="height: 350px;">
+                                    <canvas id="canvas-energy"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MathJax for Formulas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$']] } };
+    </script>
+    
+    <!-- Simulations Logic -->
+    <script src="academy_simulations.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

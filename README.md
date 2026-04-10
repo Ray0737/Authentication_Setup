@@ -53,7 +53,7 @@
 - **Frontend**: HTML5, Vanilla JavaScript (ES6+), CSS3
 - **Design System**: Bootstrap 5 + LINE Seed Font Family
 - **Backend & Database**: Supabase (PostgreSQL)
-- **Deployment**: Local Environment / GitHub Services
+- **Deployment**: Local Environment / GitHub Services / Vercel host
 
 #### 6.4 รายละเอียดโปรแกรม (Software Specification)
 - **Input Specification**: 

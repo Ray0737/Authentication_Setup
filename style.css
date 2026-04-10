@@ -1518,6 +1518,31 @@ body {
     line-height: 1.4;
 }
 
+/* ACADEMY / INTANIA LAB STYLES */
+.lesson-card {
+    border-radius: 0;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lesson-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+    border-color: #000 !important;
+}
+
+.lesson-icon-label {
+    display: inline-block;
+    padding: 2px 10px;
+    background: #f0f0f0;
+    color: #000;
+    font-weight: 900;
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    border-radius: 2px;
+}
+
 #replyPreviewArea {
     animation: slideDown 0.3s ease;
 }

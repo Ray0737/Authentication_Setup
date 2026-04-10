@@ -2084,6 +2084,43 @@ window.tacticalNotify = (msg) => {
     }, 3000);
 };
 
+/**
+ * ACADEMY_FILTERING: Strategic Mission Dossier Navigation
+ */
+function toggleAcademyFilter(category) {
+    const cards = document.querySelectorAll('#feature-class .col');
+    const buttons = document.querySelectorAll('#feature-class .btn-outline-dark, #feature-class .btn-outline-danger');
+    
+    // Update Button States
+    buttons.forEach(btn => {
+        if (btn.textContent.includes(category) || (category === 'ALL' && btn.textContent === 'ALL_LEVELS')) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Filter Cards
+    cards.forEach(card => {
+        const title = card.querySelector('h6').textContent.toUpperCase();
+        const label = card.querySelector('.lesson-icon-label').textContent.toUpperCase();
+        
+        if (category === 'ALL') {
+            card.classList.remove('d-none');
+        } else if (category === 'MATH' && (title.includes('MATH') || label.includes('MAT'))) {
+            card.classList.remove('d-none');
+        } else if (category === 'PHYSICS' && (title.includes('PHYSICS') || label.includes('PHY'))) {
+            card.classList.remove('d-none');
+        } else if (category === 'SAT_PREP' && (title.includes('SAT') || label.includes('SAT'))) {
+            card.classList.remove('d-none');
+        } else {
+            card.classList.add('d-none');
+        }
+    });
+}
+
+// Global scope for onclick
+window.toggleAcademyFilter = toggleAcademyFilter;
 
 
 // Call global sync init
